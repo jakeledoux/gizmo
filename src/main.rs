@@ -1,33 +1,38 @@
 mod components;
 mod events;
+mod items;
 mod systems;
 
-use bevy::{image::ImageSamplerDescriptor, prelude::*};
+use bevy::prelude::*;
 
 use components::*;
 use events::*;
+use items::*;
 use systems::*;
 
 fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins.set(ImagePlugin {
-            default_sampler: ImageSamplerDescriptor::nearest(),
-        }))
-        .add_event::<AttackEvent>()
-        .add_event::<DamageEvent>()
-        .add_event::<DeathEvent>()
-        .add_systems(Startup, setup)
-        .add_systems(Update, (debug_attack, debug_show_all_entities, exit_on_esc))
-        // event handlers
-        .add_systems(
-            Update,
-            (
-                AttackEvent::handler,
-                DamageEvent::handler,
-                DeathEvent::handler,
-            ),
-        )
-        .run();
+    let mut item_manager: ItemManager = ItemManager::new();
+    item_manager.load_items("skyrim.json");
+    dbg!(item_manager);
+    // App::new()
+    //     .add_plugins(DefaultPlugins.set(ImagePlugin {
+    //         default_sampler: ImageSamplerDescriptor::nearest(),
+    //     }))
+    //     .add_event::<AttackEvent>()
+    //     .add_event::<DamageEvent>()
+    //     .add_event::<DeathEvent>()
+    //     .add_systems(Startup, setup)
+    //     .add_systems(Update, (debug_attack, debug_show_all_entities, exit_on_esc))
+    //     // event handlers
+    //     .add_systems(
+    //         Update,
+    //         (
+    //             AttackEvent::handler,
+    //             DamageEvent::handler,
+    //             DeathEvent::handler,
+    //         ),
+    //     )
+    //     .run();
 }
 
 fn setup(mut commands: Commands) {

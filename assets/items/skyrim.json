@@ -1,0 +1,820 @@
+{
+  "apparel": [
+    {
+      "id": "hide-armor",
+      "name": "Hide Armor",
+      "limb": "body",
+      "defense": 20,
+      "weight": 5,
+      "value": 50
+    },
+    {
+      "id": "skaal-coat",
+      "name": "Skaal Coat",
+      "limb": "body",
+      "defense": 26,
+      "weight": 5,
+      "value": 100
+    },
+    {
+      "id": "vampire-armor",
+      "name": "Vampire Armor",
+      "limb": "body",
+      "defense": 25,
+      "weight": 5,
+      "value": 175
+    },
+    {
+      "id": "deathbrand-armor",
+      "name": "Deathbrand Armor",
+      "limb": "body",
+      "defense": 39,
+      "weight": 7,
+      "value": 2433
+    },
+    {
+      "id": "iron-armor",
+      "name": "Iron Armor",
+      "limb": "body",
+      "defense": 25,
+      "weight": 30,
+      "value": 125
+    },
+    {
+      "id": "wolf-armor",
+      "name": "Wolf Armor",
+      "limb": "body",
+      "defense": 31,
+      "weight": 20,
+      "value": 55
+    },
+    {
+      "id": "steel-plate-armor",
+      "name": "Steel Plate Armor",
+      "limb": "body",
+      "defense": 40,
+      "weight": 38,
+      "value": 625
+    },
+    {
+      "id": "steel-armor",
+      "name": "Steel Armor",
+      "limb": "body",
+      "defense": 31,
+      "weight": 35,
+      "value": 275
+    },
+    {
+      "id": "orcish-armor",
+      "name": "Orcish Armor",
+      "limb": "body",
+      "defense": 40,
+      "weight": 35,
+      "value": 1000
+    },
+    {
+      "id": "blades-armor",
+      "name": "Blades Armor",
+      "limb": "body",
+      "defense": 44,
+      "weight": 45,
+      "value": 400
+    },
+    {
+      "id": "fine-clothes",
+      "name": "Fine Clothes",
+      "limb": "body",
+      "defense": 0,
+      "weight": 1,
+      "value": 40
+    },
+    {
+      "id": "ragged-robes",
+      "name": "Ragged Robes",
+      "limb": "body",
+      "defense": 0,
+      "weight": 1,
+      "value": 1
+    },
+    {
+      "id": "ragged-clothes",
+      "name": "Ragged Clothes",
+      "limb": "body",
+      "defense": 0,
+      "weight": 1,
+      "value": 1
+    },
+    {
+      "id": "noble-clothes",
+      "name": "Noble Clothes",
+      "limb": "body",
+      "defense": 0,
+      "weight": 3,
+      "value": 100
+    },
+    {
+      "id": "refined-tunic",
+      "name": "Refined Tunic",
+      "limb": "body",
+      "defense": 0,
+      "weight": 1,
+      "value": 100
+    },
+    {
+      "id": "redguard-clothes",
+      "name": "Redguard Clothes",
+      "limb": "body",
+      "defense": 0,
+      "weight": 1,
+      "value": 5
+    },
+    {
+      "id": "vampire-robes",
+      "name": "Vampire Robes",
+      "limb": "body",
+      "defense": 0,
+      "weight": 1,
+      "value": 5
+    },
+    {
+      "id": "wedding-dress",
+      "name": "Wedding Dress",
+      "limb": "body",
+      "defense": 0,
+      "weight": 1,
+      "value": 50
+    },
+    {
+      "id": "emperors-robes",
+      "name": "Emperor's Robes",
+      "limb": "body",
+      "defense": 0,
+      "weight": 1,
+      "value": 100
+    },
+    {
+      "id": "hide-helmet",
+      "name": "Hide Helmet",
+      "limb": "head",
+      "defense": 10,
+      "weight": 2,
+      "value": 25
+    },
+    {
+      "id": "helmet-of-the-old-gods",
+      "name": "Helmet of the Old Gods",
+      "limb": "head",
+      "defense": 12,
+      "weight": 3,
+      "value": 345
+    },
+    {
+      "id": "iron-helmet",
+      "name": "Iron Helmet",
+      "limb": "head",
+      "defense": 15,
+      "weight": 5,
+      "value": 60
+    },
+    {
+      "id": "steel-helmet",
+      "name": "Steel Helmet",
+      "limb": "head",
+      "defense": 17,
+      "weight": 5,
+      "value": 125
+    },
+    {
+      "id": "imperial-helmet",
+      "name": "Imperial Helmet",
+      "limb": "head",
+      "defense": 15,
+      "weight": 5,
+      "value": 50
+    },
+    {
+      "id": "jagged-crown",
+      "name": "The Jagged Crown",
+      "limb": "head",
+      "defense": 23,
+      "weight": 9,
+      "value": 5000
+    },
+    {
+      "id": "mage-hood",
+      "name": "Mage Hood",
+      "limb": "head",
+      "defense": 0,
+      "weight": 1,
+      "value": 1
+    },
+    {
+      "id": "ragged-cap",
+      "name": "Ragged Cap",
+      "limb": "head",
+      "defense": 0,
+      "weight": 1,
+      "value": 1
+    },
+    {
+      "id": "vampire-hood",
+      "name": "Vampire Hood",
+      "limb": "head",
+      "defense": 0,
+      "weight": 1,
+      "value": 1
+    },
+    {
+      "id": "chefs-hat",
+      "name": "Chef's Hat",
+      "limb": "head",
+      "defense": 0,
+      "weight": 1,
+      "value": 1
+    },
+    {
+      "id": "fine-hat",
+      "name": "Fine Hat",
+      "limb": "head",
+      "defense": 0,
+      "weight": 1,
+      "value": 25
+    },
+    {
+      "id": "cowl",
+      "name": "Cowl",
+      "limb": "head",
+      "defense": 0,
+      "weight": 1,
+      "value": 1
+    },
+    {
+      "id": "vampire-gloves",
+      "name": "Vampire Gloves",
+      "limb": "hands",
+      "defense": 0,
+      "weight": 1,
+      "value": 1
+    },
+    {
+      "id": "fur-bracers",
+      "name": "Fur Bracers",
+      "limb": "hands",
+      "defense": 6,
+      "weight": 1,
+      "value": 10
+    },
+    {
+      "id": "cultist-gloves",
+      "name": "Cultist Gloves",
+      "limb": "hands",
+      "defense": 7,
+      "weight": 2,
+      "value": 30
+    },
+    {
+      "id": "gauntlets-of-the-old-gods",
+      "name": "Gauntlets of the Old Gods",
+      "limb": "hands",
+      "defense": 7,
+      "weight": 1,
+      "value": 592
+    },
+    {
+      "id": "gilded-wristguards",
+      "name": "Gilded Wristguards",
+      "limb": "hands",
+      "defense": 7,
+      "weight": 1,
+      "value": 21
+    },
+    {
+      "id": "nightingale-gloves",
+      "name": "Nightingale Gloves",
+      "limb": "hands",
+      "defense": 10,
+      "weight": 2,
+      "value": 1924
+    },
+    {
+      "id": "leather-bracers",
+      "name": "Leather Bracers",
+      "limb": "hands",
+      "defense": 7,
+      "weight": 2,
+      "value": 25
+    },
+    {
+      "id": "shrouded-gloves",
+      "name": "Shrouded Gloves",
+      "limb": "hands",
+      "defense": 8,
+      "weight": 2,
+      "value": 125
+    },
+    {
+      "id": "vampire-gauntlets",
+      "name": "Vampire Gauntlets",
+      "limb": "hands",
+      "defense": 8,
+      "weight": 2,
+      "value": 25
+    },
+    {
+      "id": "iron-gauntlets",
+      "name": "Iron Gauntlets",
+      "limb": "hands",
+      "defense": 11,
+      "weight": 5,
+      "value": 25
+    },
+    {
+      "id": "dragonplate-gauntlets",
+      "name": "Dragonplate Gauntlets",
+      "limb": "hands",
+      "defense": 17,
+      "weight": 8,
+      "value": 425
+    },
+    {
+      "id": "dwarven-gauntlets",
+      "name": "Dwarven Gauntlets",
+      "limb": "hands",
+      "defense": 13,
+      "weight": 8,
+      "value": 85
+    },
+    {
+      "id": "elven-boots",
+      "name": "Elven Boots",
+      "limb": "feet",
+      "defense": 9,
+      "weight": 1,
+      "value": 45
+    },
+    {
+      "id": "fur-shoes",
+      "name": "Fur Shoes",
+      "limb": "feet",
+      "defense": 6,
+      "weight": 2,
+      "value": 4
+    },
+    {
+      "id": "leather-boots",
+      "name": "Leather Boots",
+      "limb": "feet",
+      "defense": 7,
+      "weight": 2,
+      "value": 25
+    },
+    {
+      "id": "glass-boots",
+      "name": "Glass Boots",
+      "limb": "feet",
+      "defense": 11,
+      "weight": 2,
+      "value": 190
+    },
+    {
+      "id": "dragonscale-boots",
+      "name": "Dragonscale Boots",
+      "limb": "feet",
+      "defense": 12,
+      "weight": 3,
+      "value": 300
+    },
+    {
+      "id": "imperial-boots",
+      "name": "Imperial Boots",
+      "limb": "feet",
+      "defense": 11,
+      "weight": 8,
+      "value": 20
+    },
+    {
+      "id": "wolf-boots",
+      "name": "Wolf Boots",
+      "limb": "feet",
+      "defense": 12,
+      "weight": 4,
+      "value": 11
+    },
+    {
+      "id": "steel-plate-boots",
+      "name": "Steel Plate Boots",
+      "limb": "feet",
+      "defense": 14,
+      "weight": 9,
+      "value": 125
+    },
+    {
+      "id": "ahzidals-boots",
+      "name": "Ahzidal's Boots of Waterwalking",
+      "limb": "feet",
+      "defense": 14,
+      "weight": 9,
+      "value": 1125
+    },
+    {
+      "id": "fur-boots",
+      "name": "Fur-Lined Boots",
+      "limb": "feet",
+      "defense": 0,
+      "weight": 1,
+      "value": 25
+    },
+    {
+      "id": "cultist-boots",
+      "name": "Cultist Boots",
+      "limb": "feet",
+      "defense": 0,
+      "weight": 1,
+      "value": 25
+    },
+    {
+      "id": "footwraps",
+      "name": "Footwraps",
+      "limb": "feet",
+      "defense": 0,
+      "weight": 1,
+      "value": 1
+    },
+    {
+      "id": "ragged-boots",
+      "name": "Ragged Boots",
+      "limb": "feet",
+      "defense": 0,
+      "weight": 1,
+      "value": 1
+    },
+    {
+      "id": "boots",
+      "name": "Boots",
+      "limb": "feet",
+      "defense": 0,
+      "weight": 1,
+      "value": 5
+    },
+    {
+      "id": "vampire-boots",
+      "name": "Vampire Boots",
+      "limb": "feet",
+      "defense": 0,
+      "weight": 1,
+      "value": 2
+    },
+    {
+      "id": "temple-priest-boots",
+      "name": "Temple Priest Boots",
+      "limb": "feet",
+      "defense": 0,
+      "weight": 1,
+      "value": 25
+    },
+    {
+      "id": "pleated-shoes",
+      "name": "Pleated Shoes",
+      "limb": "feet",
+      "defense": 0,
+      "weight": 1,
+      "value": 25
+    }
+  ],
+  "weapon": [
+    {
+      "id": "shiv",
+      "name": "Shiv",
+      "damage": 5,
+      "weight": 2,
+      "value": 5
+    },
+    {
+      "id": "iron-dagger",
+      "name": "Iron Dagger",
+      "damage": 4,
+      "weight": 2,
+      "value": 10
+    },
+    {
+      "id": "steel-dagger",
+      "name": "Steel Dagger",
+      "damage": 5,
+      "weight": 3,
+      "value": 18
+    },
+    {
+      "id": "nordic-dagger",
+      "name": "Nordic Dagger",
+      "damage": 8,
+      "weight": 4,
+      "value": 115
+    },
+    {
+      "id": "orcish-dagger",
+      "name": "Orcish Dagger",
+      "damage": 6,
+      "weight": 3,
+      "value": 30
+    },
+    {
+      "id": "wooden-sword",
+      "name": "Wooden Sword",
+      "damage": 2,
+      "weight": 3,
+      "value": 5
+    },
+    {
+      "id": "iron-sword",
+      "name": "Iron Sword",
+      "damage": 7,
+      "weight": 9,
+      "value": 25
+    },
+    {
+      "id": "steel-sword",
+      "name": "Steel Sword",
+      "damage": 8,
+      "weight": 10,
+      "value": 45
+    },
+    {
+      "id": "nordic-sword",
+      "name": "Nordic Sword",
+      "damage": 11,
+      "weight": 12,
+      "value": 290
+    },
+    {
+      "id": "dragonbone-sword",
+      "name": "Dragonbone Sword",
+      "damage": 15,
+      "weight": 19,
+      "value": 1500,
+      "rarity": "legendary"
+    }
+  ],
+  "food": [
+    {
+      "id": "apple-pie",
+      "name": "Apple Pie",
+      "heal_HP": 10,
+      "weight": 1,
+      "value": 5
+    },
+    {
+      "id": "baked-potatoes",
+      "name": "Baked Potatoes",
+      "heal_HP": 5,
+      "weight": 1,
+      "value": 2
+    },
+    {
+      "id": "beef-stew",
+      "name": "Beef Stew",
+      "heal_HP": 6,
+      "weight": 1,
+      "value": 6
+    },
+    {
+      "id": "braided-bread",
+      "name": "Braided Bread",
+      "heal_HP": 2,
+      "weight": 1,
+      "value": 2
+    },
+    {
+      "id": "bread",
+      "name": "Bread",
+      "heal_HP": 2,
+      "weight": 1,
+      "value": 2
+    },
+    {
+      "id": "cabbage",
+      "name": "Cabbage",
+      "heal_HP": 1,
+      "weight": 1,
+      "value": 2
+    },
+    {
+      "id": "chicken-breast",
+      "name": "Chicken Breast",
+      "heal_HP": 2,
+      "weight": 1,
+      "value": 3
+    },
+    {
+      "id": "clam-chowder",
+      "name": "Clam Chowder",
+      "heal_HP": 10,
+      "weight": 1,
+      "value": 5
+    },
+    {
+      "id": "cooked-beef",
+      "name": "Cooked Beef",
+      "heal_HP": 10,
+      "weight": 1,
+      "value": 5
+    },
+    {
+      "id": "dog-meat",
+      "name": "Dog Meat",
+      "heal_HP": 2,
+      "weight": 1,
+      "value": 3
+    },
+    {
+      "id": "garlic-bread",
+      "name": "Garlic Bread",
+      "heal_HP": 2,
+      "weight": 1,
+      "value": 2
+    },
+    {
+      "id": "goat-cheese-wedge",
+      "name": "Goat Cheese Wedge",
+      "heal_HP": 1,
+      "weight": 1,
+      "value": 4
+    },
+    {
+      "id": "goat-cheese-wheel",
+      "name": "Goat Cheese Wheel",
+      "heal_HP": 15,
+      "weight": 2,
+      "value": 10
+    },
+    {
+      "id": "green-apple",
+      "name": "Green Apple",
+      "heal_HP": 2,
+      "weight": 1,
+      "value": 3
+    },
+    {
+      "id": "honey-nut-treat",
+      "name": "Honey Nut Treat",
+      "heal_HP": 5,
+      "weight": 1,
+      "value": 2
+    },
+    {
+      "id": "horse-meat",
+      "name": "Horse Meat",
+      "heal_HP": 2,
+      "weight": 2,
+      "value": 3
+    },
+    {
+      "id": "goat-leg",
+      "name": "Leg of Goat",
+      "heal_HP": 2,
+      "weight": 2,
+      "value": 3
+    },
+    {
+      "id": "mammoth-cheese-bowl",
+      "name": "Mammoth Cheese Bowl",
+      "heal_HP": 10,
+      "weight": 1,
+      "value": 3
+    },
+    {
+      "id": "mammoth-steak",
+      "name": "Mammoth Steak",
+      "heal_HP": 10,
+      "weight": 2,
+      "value": 8
+    },
+    {
+      "id": "mudcrab-legs",
+      "name": "Mudcrab Legs",
+      "heal_HP": 1,
+      "weight": 1,
+      "value": 3
+    },
+    {
+      "id": "pheasant-breast",
+      "name": "Pheasant Breast",
+      "heal_HP": 2,
+      "weight": 1,
+      "value": 3
+    },
+    {
+      "id": "red-apple",
+      "name": "Red Apple",
+      "heal_HP": 2,
+      "weight": 1,
+      "value": 3
+    },
+    {
+      "id": "sweet-roll",
+      "name": "Sweet Roll",
+      "heal_HP": 5,
+      "weight": 1,
+      "value": 2
+    },
+    {
+      "id": "tomato-soup",
+      "name": "Tomato Soup",
+      "heal_HP": 10,
+      "weight": 1,
+      "value": 5
+    }
+  ],
+  "potion": [
+    {
+      "id": "minor-healing-potion",
+      "name": "Potion of Minor Healing",
+      "value": 17,
+      "description": "Restore 25 points of Health",
+      "effects": {
+        "health": 25
+      }
+    },
+    {
+      "id": "healing-potion",
+      "name": "Potion of Healing",
+      "value": 36,
+      "description": "Restore 50 points of Health",
+      "effects": {
+        "health": 50
+      }
+    },
+    {
+      "id": "plentiful-healing-potion",
+      "name": "Potion of Plentiful Healing",
+      "value": 57,
+      "description": "Restore 75 points of Health",
+      "effects": {
+        "health": 75
+      }
+    },
+    {
+      "id": "vigorous-healing-potion",
+      "name": "Potion of Vigorous Healing",
+      "value": 79,
+      "description": "Restore 100 points of Health",
+      "effects": {
+        "health": 100
+      }
+    },
+    {
+      "id": "extreme-healing-potion",
+      "name": "Potion of Extreme Healing",
+      "value": 123,
+      "description": "Restore 150 points of Health",
+      "effects": {
+        "health": 150
+      }
+    },
+    {
+      "id": "ultimate-healing-potion",
+      "name": "Potion of Ultimate Healing",
+      "value": 251,
+      "description": "Completely restore Health",
+      "effects": {
+        "health": 9999999
+      }
+    }
+  ],
+  "shield": [
+    {
+      "id": "elven-shield",
+      "name": "Elven Shield",
+      "weight": 4,
+      "value": 115,
+      "defense": 21
+    },
+    {
+      "id": "hide-shield",
+      "name": "Hide Shield",
+      "weight": 4,
+      "value": 25,
+      "defense": 15
+    },
+    {
+      "id": "dragonscale-shield",
+      "name": "Dragonscale Shield",
+      "weight": 6,
+      "value": 750,
+      "defense": 29
+    },
+    {
+      "id": "iron-shield",
+      "name": "Iron Shield",
+      "weight": 12,
+      "value": 60,
+      "defense": 20
+    },
+    {
+      "id": "daedric-shield",
+      "name": "Daedric Shield",
+      "weight": 8,
+      "value": 1600,
+      "defense": 36
+    }
+  ]
+}

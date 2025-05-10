@@ -1,22 +1,24 @@
 use bevy::prelude::Component;
+use serde::Deserialize;
 
 pub type ItemId = u64;
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Deserialize)]
 pub enum ArmorSlot {
     Head,
-    Torso,
-    Pants,
+    Body,
     Feet,
+    Hands,
     Shield,
 }
 
 #[derive(Default, Debug, Hash, PartialEq, Eq)]
 pub struct ArmorSlots {
     head: Option<ItemId>,
-    torso: Option<ItemId>,
-    pants: Option<ItemId>,
+    body: Option<ItemId>,
     feet: Option<ItemId>,
+    hands: Option<ItemId>,
     shield: Option<ItemId>,
 }
 
@@ -24,9 +26,9 @@ impl ArmorSlots {
     pub fn get_mut(&mut self, slot: ArmorSlot) -> &mut Option<ItemId> {
         match slot {
             ArmorSlot::Head => &mut self.head,
-            ArmorSlot::Torso => &mut self.torso,
-            ArmorSlot::Pants => &mut self.pants,
+            ArmorSlot::Body => &mut self.body,
             ArmorSlot::Feet => &mut self.feet,
+            ArmorSlot::Hands => &mut self.hands,
             ArmorSlot::Shield => &mut self.shield,
         }
     }
@@ -34,9 +36,9 @@ impl ArmorSlots {
     pub fn get(&self, slot: ArmorSlot) -> Option<ItemId> {
         match slot {
             ArmorSlot::Head => self.head,
-            ArmorSlot::Torso => self.torso,
-            ArmorSlot::Pants => self.pants,
+            ArmorSlot::Body => self.body,
             ArmorSlot::Feet => self.feet,
+            ArmorSlot::Hands => self.hands,
             ArmorSlot::Shield => self.shield,
         }
     }
@@ -122,9 +124,9 @@ mod test {
         assert_eq!(armor_slots.get(ArmorSlot::Head), None);
 
         assert_eq!(armor_slots.set(ArmorSlot::Feet, 0), None);
-        assert_eq!(armor_slots.set(ArmorSlot::Torso, 2), None);
+        assert_eq!(armor_slots.set(ArmorSlot::Body, 2), None);
         assert_eq!(armor_slots.remove(ArmorSlot::Feet), Some(0));
-        assert_eq!(armor_slots.remove(ArmorSlot::Torso), Some(2));
+        assert_eq!(armor_slots.remove(ArmorSlot::Body), Some(2));
 
         assert_eq!(armor_slots, ArmorSlots::default());
     }
