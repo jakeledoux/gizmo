@@ -62,9 +62,8 @@ pub enum ItemKind {
     Shield,
 }
 
-// TODO: make not public
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct ItemFile {
+struct ItemFile {
     apparel: Option<Vec<Apparel>>,
     weapon: Option<Vec<Weapon>>,
     food: Option<Vec<Food>>,

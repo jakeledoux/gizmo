@@ -5,7 +5,7 @@ use bevy::{
 };
 use serde::Deserialize;
 
-use crate::{AnyItem, ItemId, ItemInstance, ItemInstanceId, ItemKind, ItemManager};
+use crate::{AnyItem, ItemId, ItemInstance, ItemInstanceId, ItemKind, ItemManager, utils::*};
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -143,12 +143,7 @@ impl RpgEntity {
 
     pub fn attack_damage(&self, item_manager: &ItemManager) -> f32 {
         // TODO: adjust based on character stats
-        if let Some(weapon) = self
-            .weapon
-            .and_then(|instance_id| self.inventory.get(&instance_id))
-            .and_then(|instance| item_manager.get_item(instance.item_id()))
-            .and_then(|item| item.as_weapon())
-        {
+        if let Some(weapon) = get_weapon(self.weapon, &self.inventory, item_manager) {
             weapon.damage() as f32
         } else {
             1.0

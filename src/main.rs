@@ -4,6 +4,7 @@ mod components;
 mod events;
 mod items;
 mod systems;
+mod utils;
 
 use bevy::prelude::*;
 
@@ -11,6 +12,7 @@ use components::*;
 use events::*;
 use items::*;
 use systems::*;
+use utils::*;
 
 fn main() -> anyhow::Result<()> {
     App::new()
