@@ -3,6 +3,7 @@
 mod components;
 mod events;
 mod items;
+mod scenes;
 mod systems;
 mod utils;
 
@@ -11,12 +12,15 @@ use bevy::prelude::*;
 use components::*;
 use events::*;
 use items::*;
+use scenes::*;
 use systems::*;
 use utils::*;
 
 fn main() -> anyhow::Result<()> {
     App::new()
+        // TODO: make Manager structs support hot-reloading
         .insert_resource(ItemManager::new())
+        .insert_resource(SceneManager::new())
         .add_plugins(DefaultPlugins)
         .add_event::<AttackEvent>()
         .add_event::<DamageEvent>()
@@ -32,18 +36,28 @@ fn main() -> anyhow::Result<()> {
                 DeathEvent::handler,
             ),
         )
-        // .add_systems(Update, debug_quit_immediately)
+        .add_systems(Update, debug_quit_immediately)
         .run();
 
     Ok(())
 }
 
-fn setup(mut commands: Commands, mut item_manager: ResMut<ItemManager>) {
+fn setup(
+    mut commands: Commands,
+    mut item_manager: ResMut<ItemManager>,
+    mut scene_manager: ResMut<SceneManager>,
+) {
     commands.spawn(Camera2d);
 
     if let Err(e) = item_manager.load_items("skyrim.json") {
         warn!("could not load items: {e}")
     };
+
+    if let Err(e) = scene_manager.load_scene("mike.json") {
+        warn!("could not load scene: {e}")
+    };
+
+    dbg!(scene_manager.get_scene("mike").unwrap());
 
     let mut jake = RpgEntity::new("Jake");
     if let Some(vampire_gloves) =

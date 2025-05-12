@@ -1,0 +1,215 @@
+{
+  "id": "mike",
+  "music": "harvest_dawn",
+  "characters": {
+    "mike": {
+      "name": "Mike",
+      "image": "images/mike.png",
+      "voice": "mike"
+    }
+  },
+  "dialogue": {
+    "start": {
+      "lines": [
+        {
+          "from": "mike",
+          "txt": "Hey, you. What's your name?"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "$NAME",
+          "lnk": "not-allowed"
+        },
+        {
+          "txt": "uhhh.... Mike.",
+          "skill-check": {
+            "check": "charisma",
+            "modifier": -3,
+            "lnk-fail": "not-convinced",
+            "lnk-crit-fail": "critical-not-convinced"
+          },
+          "lnk": "convinced"
+        },
+        {
+          "txt": "Bond... James Bond.",
+          "lnk": "door-slam"
+        },
+        {
+          "txt": "Whatever I want it to be, bitch.",
+          "skill-check": {
+            "check": "strength",
+            "lnk-fail": "not-intimidated"
+          },
+          "lnk": "intimidated"
+        }
+      ]
+    },
+    "intimidated": {
+      "update-characters": {
+        "mike": {
+          "image": "images/mike_scared.png"
+        }
+      },
+      "scene-entry": {
+        "mike": "locked"
+      },
+      "lines": [
+        {
+          "from": "mike",
+          "txt": "Woah!<hpause> No need to get aggressive, sir."
+        },
+        {
+          "from": "mike",
+          "txt": "Here, please, just take this. It's all I have. Just leave me alone.",
+          "reward-gold": {
+            "amount": 50,
+            "from": "mike"
+          }
+        }
+      ]
+    },
+    "not-intimidated": {
+      "update-characters": {
+        "mike": {
+          "image": "images/mike_angry_amused.png"
+        }
+      },
+      "lines": [
+        {
+          "from": "mike",
+          "txt": "Ha<tpause> ha<tpause> ha!<tpause> You think you can muscle me like that?",
+          "update-characters": {
+            "mike": {
+              "image": "images/mike_angry.png"
+            }
+          }
+        },
+        {
+          "from": "mike",
+          "txt": "Get lost!"
+        }
+      ],
+      "cont": "door-slam"
+    },
+    "locked": {
+      "lines": [
+        {
+          "from": "narrator",
+          "txt": "The door is locked.",
+          "style": "info"
+        }
+      ]
+    },
+    "punch-door-slam": {
+      "play-sound": {
+        "sound": "crab_engine/sounds/punch.wav"
+      },
+      "scene-entry": {
+        "mike": "no-answer"
+      },
+      "lines": [
+        {
+          "from": "narrator",
+          "txt": "%Mike% punches you and slams the door in your face.",
+          "style": "info"
+        }
+      ]
+    },
+    "door-slam": {
+      "scene-entry": {
+        "mike": "no-answer"
+      },
+      "lines": [
+        {
+          "from": "narrator",
+          "txt": "%Mike% slams the door in your face.",
+          "style": "info"
+        }
+      ]
+    },
+    "not-allowed": {
+      "update-characters": {
+        "mike": {
+          "image": "images/mike_angry.png"
+        }
+      },
+      "lines": [
+        {
+          "from": "mike",
+          "txt": "Read the sign, buddy. A PLACE FOR MIKES."
+        }
+      ],
+      "cont": "door-slam"
+    },
+    "not-convinced": {
+      "update-characters": {
+        "mike": {
+          "image": "images/mike_angry.png"
+        }
+      },
+      "lines": [
+        {
+          "from": "mike",
+          "txt": "Yeah, right! Get out of here."
+        }
+      ],
+      "cont": "door-slam"
+    },
+    "critical-not-convinced": {
+      "update-characters": {
+        "mike": {
+          "image": "images/mike_angry.png"
+        }
+      },
+      "lines": [
+        {
+          "from": "mike",
+          "txt": "Fucking liar!"
+        }
+      ],
+      "cont": "punch-door-slam"
+    },
+    "convinced": {
+      "update-characters": {
+        "mike": {
+          "image": "images/mike_happy.png"
+        }
+      },
+      "scene-entry": {
+        "mike": "convinced-return"
+      },
+      "lines": [
+        {
+          "from": "mike",
+          "txt": "Sick. Always glad to see another Mike."
+        },
+        {
+          "from": "mike",
+          "txt": "Here's a few pence from one Mike to another.<hpause> Use it well.",
+          "reward-gold": {
+            "amount": 50,
+            "from": "mike",
+            "method": "gift"
+          }
+        }
+      ]
+    },
+    "convinced-return": {
+      "lines": [
+        {
+          "from": "mike",
+          "txt": "Yo, what up, Mike?"
+        }
+      ]
+    },
+    "no-answer": {
+      "lines": [
+        {
+          "from": "mike",
+          "txt": "Buzz off, non-Mike!"
+        }
+      ]
+    }
+  }
+}
