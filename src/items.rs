@@ -47,7 +47,8 @@ impl ItemFile {
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Apparel {
-    id: String,
+    #[serde(alias = "id")]
+    human_id: String,
     name: String,
     #[serde(alias = "limb")]
     slot: ArmorSlot,
@@ -58,7 +59,8 @@ pub struct Apparel {
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Weapon {
-    id: String,
+    #[serde(alias = "id")]
+    human_id: String,
     name: String,
     damage: u32,
     weight: u32,
@@ -67,7 +69,8 @@ pub struct Weapon {
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Food {
-    id: String,
+    #[serde(alias = "id")]
+    human_id: String,
     name: String,
     #[serde(alias = "heal_HP")]
     hp: u32,
@@ -77,7 +80,8 @@ pub struct Food {
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Potion {
-    id: String,
+    #[serde(alias = "id")]
+    human_id: String,
     name: String,
     description: String,
     value: u32,
@@ -91,7 +95,8 @@ pub struct PotionEffects {
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Shield {
-    id: String,
+    #[serde(alias = "id")]
+    human_id: String,
     name: String,
     weight: u32,
     defense: u32,
@@ -118,15 +123,98 @@ pub enum AnyItem {
 }
 
 impl AnyItem {
+    pub fn human_id(&self) -> &str {
+        match self {
+            AnyItem::Apparel(i) => &i.human_id,
+            AnyItem::Weapon(i) => &i.human_id,
+            AnyItem::Food(i) => &i.human_id,
+            AnyItem::Potion(i) => &i.human_id,
+            AnyItem::Shield(i) => &i.human_id,
+        }
+    }
+
+    pub fn weight(&self) -> u32 {
+        match self {
+            AnyItem::Apparel(i) => i.weight,
+            AnyItem::Weapon(i) => i.weight,
+            AnyItem::Food(i) => i.weight,
+            AnyItem::Potion(_) => 0,
+            AnyItem::Shield(i) => i.weight,
+        }
+    }
+
+    pub fn value(&self) -> u32 {
+        match self {
+            AnyItem::Apparel(i) => i.value,
+            AnyItem::Weapon(i) => i.value,
+            AnyItem::Food(i) => i.value,
+            AnyItem::Potion(i) => i.value,
+            AnyItem::Shield(i) => i.value,
+        }
+    }
+
     pub fn item_id(&self) -> ItemId {
-        let id = match self {
-            AnyItem::Apparel(i) => &i.id,
-            AnyItem::Weapon(i) => &i.id,
-            AnyItem::Food(i) => &i.id,
-            AnyItem::Potion(i) => &i.id,
-            AnyItem::Shield(i) => &i.id,
-        };
-        FixedHasher::default().hash_one(id).into()
+        hash_human_id(self.human_id())
+    }
+
+    pub fn is_apparel(&self) -> bool {
+        matches!(self, Self::Apparel(_))
+    }
+
+    pub fn is_weapon(&self) -> bool {
+        matches!(self, Self::Weapon(_))
+    }
+
+    pub fn is_food(&self) -> bool {
+        matches!(self, Self::Food(_))
+    }
+
+    pub fn is_potion(&self) -> bool {
+        matches!(self, Self::Potion(_))
+    }
+
+    pub fn is_shield(&self) -> bool {
+        matches!(self, Self::Shield(_))
+    }
+
+    pub fn as_apparel(&self) -> Option<&Apparel> {
+        if let Self::Apparel(apparel) = self {
+            Some(apparel)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_weapon(&self) -> Option<&Weapon> {
+        if let Self::Weapon(weapon) = self {
+            Some(weapon)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_food(&self) -> Option<&Food> {
+        if let Self::Food(food) = self {
+            Some(food)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_potion(&self) -> Option<&Potion> {
+        if let Self::Potion(potion) = self {
+            Some(potion)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_shield(&self) -> Option<&Shield> {
+        if let Self::Shield(shield) = self {
+            Some(shield)
+        } else {
+            None
+        }
     }
 }
 
@@ -149,4 +237,16 @@ impl ItemManager {
         });
         Ok(())
     }
+
+    pub fn get_item(&self, id: ItemId) -> Option<&AnyItem> {
+        self.items.get(&id)
+    }
+
+    pub fn get_item_by_human_id(&self, id: &str) -> Option<&AnyItem> {
+        self.items.get(&hash_human_id(id))
+    }
+}
+
+pub fn hash_human_id(id: &str) -> ItemId {
+    FixedHasher::default().hash_one(id).into()
 }

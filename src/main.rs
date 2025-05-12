@@ -10,10 +10,9 @@ use events::*;
 use items::*;
 use systems::*;
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let mut item_manager: ItemManager = ItemManager::new();
-    item_manager.load_items("skyrim.json");
-    dbg!(item_manager);
+    item_manager.load_items("skyrim.json")?;
     // App::new()
     //     .add_plugins(DefaultPlugins.set(ImagePlugin {
     //         default_sampler: ImageSamplerDescriptor::nearest(),
@@ -33,6 +32,8 @@ fn main() {
     //         ),
     //     )
     //     .run();
+
+    Ok(())
 }
 
 fn setup(mut commands: Commands) {
