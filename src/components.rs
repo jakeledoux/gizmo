@@ -1,10 +1,14 @@
-use bevy::prelude::Component;
+use bevy::{
+    log::{debug, info, warn},
+    platform::collections::HashMap,
+    prelude::Component,
+};
 use serde::Deserialize;
 
-pub type ItemId = u64;
+use crate::{AnyItem, ItemId, ItemInstance, ItemInstanceId, ItemKind, ItemManager};
 
-#[serde(rename_all = "lowercase")]
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum ArmorSlot {
     Head,
     Body,
@@ -15,15 +19,15 @@ pub enum ArmorSlot {
 
 #[derive(Default, Debug, Hash, PartialEq, Eq)]
 pub struct ArmorSlots {
-    head: Option<ItemId>,
-    body: Option<ItemId>,
-    feet: Option<ItemId>,
-    hands: Option<ItemId>,
-    shield: Option<ItemId>,
+    head: Option<ItemInstanceId>,
+    body: Option<ItemInstanceId>,
+    feet: Option<ItemInstanceId>,
+    hands: Option<ItemInstanceId>,
+    shield: Option<ItemInstanceId>,
 }
 
 impl ArmorSlots {
-    pub fn get_mut(&mut self, slot: ArmorSlot) -> &mut Option<ItemId> {
+    pub fn get_mut(&mut self, slot: ArmorSlot) -> &mut Option<ItemInstanceId> {
         match slot {
             ArmorSlot::Head => &mut self.head,
             ArmorSlot::Body => &mut self.body,
@@ -33,34 +37,27 @@ impl ArmorSlots {
         }
     }
 
-    pub fn get(&self, slot: ArmorSlot) -> Option<ItemId> {
+    pub fn get(&self, slot: ArmorSlot) -> Option<&ItemInstanceId> {
         match slot {
-            ArmorSlot::Head => self.head,
-            ArmorSlot::Body => self.body,
-            ArmorSlot::Feet => self.feet,
-            ArmorSlot::Hands => self.hands,
-            ArmorSlot::Shield => self.shield,
+            ArmorSlot::Head => self.head.as_ref(),
+            ArmorSlot::Body => self.body.as_ref(),
+            ArmorSlot::Feet => self.feet.as_ref(),
+            ArmorSlot::Hands => self.hands.as_ref(),
+            ArmorSlot::Shield => self.shield.as_ref(),
         }
     }
 
-    pub fn set(&mut self, slot: ArmorSlot, item: ItemId) -> Option<ItemId> {
-        let previous_item = self.get(slot);
-        _ = self.get_mut(slot).insert(item);
-        previous_item
+    pub fn set(&mut self, slot: ArmorSlot, item: ItemInstanceId) -> Option<ItemInstanceId> {
+        self.get_mut(slot).replace(item)
     }
 
-    pub fn remove(&mut self, slot: ArmorSlot) -> Option<ItemId> {
+    pub fn remove(&mut self, slot: ArmorSlot) -> Option<ItemInstanceId> {
         self.get_mut(slot).take()
     }
 
-    pub fn damage_resistence(&self) {
+    pub fn damage_restistance(&self) {
         todo!()
     }
-}
-
-pub enum LifeStatus {
-    Alive,
-    Dead,
 }
 
 #[derive(Component)]
@@ -69,11 +66,14 @@ pub struct Player;
 #[derive(Component)]
 pub struct Npc;
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct RpgEntity {
     name: &'static str,
     damage: f32,
     armor: ArmorSlots,
+    weapon: Option<ItemInstanceId>,
+    shield: Option<ItemInstanceId>,
+    pub inventory: Inventory,
 }
 
 impl RpgEntity {
@@ -82,18 +82,55 @@ impl RpgEntity {
             name,
             damage: 0.0,
             armor: ArmorSlots::default(),
+            weapon: None,
+            shield: None,
+            inventory: Inventory::default(),
         }
     }
 
-    pub fn apply_damage(&mut self, damage: f32) -> LifeStatus {
-        // TODO: apply damage resistence
-        self.damage += damage;
+    pub fn name(&self) -> &str {
+        self.name
+    }
 
-        if self.damage < self.max_health() {
-            return LifeStatus::Alive;
+    pub fn equip(&mut self, instance_id: ItemInstanceId) -> bool {
+        let Some(item_instance) = self.inventory.get(&instance_id) else {
+            warn!("could not equip: {instance_id:?}");
+            return false;
+        };
+
+        match item_instance.kind() {
+            ItemKind::Apparel(slot) => {
+                self.armor.set(*slot, instance_id);
+            }
+            ItemKind::Weapon => {
+                self.weapon.insert(instance_id);
+            }
+            ItemKind::Shield => {
+                self.shield.insert(instance_id);
+            }
+            ItemKind::Food | ItemKind::Potion => {
+                return false;
+            }
+        };
+
+        info!("{:?} equipped: {:?}", self.name, item_instance.item_id());
+        true
+    }
+
+    pub fn apply_damage(&mut self, damage: f32) -> DamageResult {
+        // TODO: apply damage resistance
+        let reduced_damage = damage;
+        self.damage += reduced_damage;
+
+        DamageResult {
+            reduced_damage,
+            life_status: if self.damage < self.max_health() {
+                LifeStatus::Alive
+            } else {
+                self.damage = self.max_health();
+                LifeStatus::Dead
+            },
         }
-        self.damage = self.max_health();
-        LifeStatus::Dead
     }
 
     pub fn max_health(&self) -> f32 {
@@ -103,6 +140,20 @@ impl RpgEntity {
     pub fn health(&self) -> f32 {
         self.max_health() - self.damage
     }
+
+    pub fn attack_damage(&self, item_manager: &ItemManager) -> f32 {
+        // TODO: adjust based on character stats
+        if let Some(weapon) = self
+            .weapon
+            .and_then(|instance_id| self.inventory.get(&instance_id))
+            .and_then(|instance| item_manager.get_item(instance.item_id()))
+            .and_then(|item| item.as_weapon())
+        {
+            weapon.damage() as f32
+        } else {
+            1.0
+        }
+    }
 }
 
 impl std::fmt::Display for RpgEntity {
@@ -111,23 +162,39 @@ impl std::fmt::Display for RpgEntity {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
+#[derive(Component, Default, Debug)]
+pub struct Inventory {
+    items: HashMap<ItemInstanceId, ItemInstance>,
+}
 
-    #[test]
-    fn test_armor_slots() {
-        let mut armor_slots = ArmorSlots::default();
-        assert_eq!(armor_slots.set(ArmorSlot::Head, 0), None);
-        assert_eq!(armor_slots.set(ArmorSlot::Head, 1), Some(0));
-        assert_eq!(armor_slots.remove(ArmorSlot::Head), Some(1));
-        assert_eq!(armor_slots.get(ArmorSlot::Head), None);
-
-        assert_eq!(armor_slots.set(ArmorSlot::Feet, 0), None);
-        assert_eq!(armor_slots.set(ArmorSlot::Body, 2), None);
-        assert_eq!(armor_slots.remove(ArmorSlot::Feet), Some(0));
-        assert_eq!(armor_slots.remove(ArmorSlot::Body), Some(2));
-
-        assert_eq!(armor_slots, ArmorSlots::default());
+impl Inventory {
+    pub fn get(&self, id: &ItemInstanceId) -> Option<&ItemInstance> {
+        self.items.get(id)
     }
+
+    pub fn insert(&mut self, instance: ItemInstance) -> ItemInstanceId {
+        let instance_id = instance.instance_id();
+        self.items.insert(instance_id, instance);
+        instance_id
+    }
+}
+
+pub enum LifeStatus {
+    Alive,
+    Dead,
+}
+
+impl LifeStatus {
+    /// Returns `true` if the life status is [`Dead`].
+    ///
+    /// [`Dead`]: LifeStatus::Dead
+    #[must_use]
+    pub fn is_dead(&self) -> bool {
+        matches!(self, Self::Dead)
+    }
+}
+
+pub struct DamageResult {
+    pub reduced_damage: f32,
+    pub life_status: LifeStatus,
 }

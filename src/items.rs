@@ -1,11 +1,66 @@
-use std::{hash::BuildHasher, path::Path};
+use std::path::Path;
 
-use bevy::platform::{collections::HashMap, hash::FixedHasher};
+use bevy::{asset::uuid::Uuid, log::warn, platform::collections::HashMap, prelude::Resource};
 use serde::Deserialize;
 
 use crate::components::ArmorSlot;
 
-const ITEM_PATH: &str = "./assets/items";
+#[cfg(debug_assertions)]
+const ITEM_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/items");
+#[cfg(not(debug_assertions))]
+const ITEM_PATH: &str = "assets/items";
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, derive_more::From, derive_more::Display)]
+pub struct ItemInstanceId(Uuid);
+
+impl ItemInstanceId {
+    pub fn new() -> Self {
+        Self(Uuid::new_v4())
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
+pub struct ItemInstance {
+    instance_id: ItemInstanceId,
+    item_id: ItemId,
+    kind: ItemKind,
+}
+
+impl ItemInstance {
+    pub fn spawn(item_id: ItemId, item_manager: &ItemManager) -> Option<Self> {
+        let Some(item) = item_manager.get_item(&item_id) else {
+            warn!("no item with ID: {item_id:?}");
+            return None;
+        };
+
+        Some(Self {
+            instance_id: ItemInstanceId::new(),
+            item_id,
+            kind: item.kind(),
+        })
+    }
+
+    pub fn instance_id(&self) -> ItemInstanceId {
+        self.instance_id
+    }
+
+    pub fn item_id(&self) -> &ItemId {
+        &self.item_id
+    }
+
+    pub fn kind(&self) -> &ItemKind {
+        &self.kind
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
+pub enum ItemKind {
+    Apparel(ArmorSlot),
+    Weapon,
+    Food,
+    Potion,
+    Shield,
+}
 
 // TODO: make not public
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -47,8 +102,7 @@ impl ItemFile {
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Apparel {
-    #[serde(alias = "id")]
-    human_id: String,
+    id: String,
     name: String,
     #[serde(alias = "limb")]
     slot: ArmorSlot,
@@ -57,20 +111,62 @@ pub struct Apparel {
     value: u32,
 }
 
+impl Apparel {
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn defense(&self) -> u32 {
+        self.defense
+    }
+
+    pub fn weight(&self) -> u32 {
+        self.weight
+    }
+
+    pub fn value(&self) -> u32 {
+        self.value
+    }
+}
+
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Weapon {
-    #[serde(alias = "id")]
-    human_id: String,
+    id: String,
     name: String,
     damage: u32,
     weight: u32,
     value: u32,
 }
 
+impl Weapon {
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn damage(&self) -> u32 {
+        self.damage
+    }
+
+    pub fn weight(&self) -> u32 {
+        self.weight
+    }
+
+    pub fn value(&self) -> u32 {
+        self.value
+    }
+}
+
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Food {
-    #[serde(alias = "id")]
-    human_id: String,
+    id: String,
     name: String,
     #[serde(alias = "heal_HP")]
     hp: u32,
@@ -78,14 +174,57 @@ pub struct Food {
     value: u32,
 }
 
+impl Food {
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn hp(&self) -> u32 {
+        self.hp
+    }
+
+    pub fn weight(&self) -> u32 {
+        self.weight
+    }
+
+    pub fn value(&self) -> u32 {
+        self.value
+    }
+}
+
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Potion {
-    #[serde(alias = "id")]
-    human_id: String,
+    id: String,
     name: String,
     description: String,
     value: u32,
     effects: PotionEffects,
+}
+
+impl Potion {
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn description(&self) -> &str {
+        &self.description
+    }
+
+    pub fn value(&self) -> u32 {
+        self.value
+    }
+
+    pub fn effects(&self) -> &PotionEffects {
+        &self.effects
+    }
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -95,20 +234,43 @@ pub struct PotionEffects {
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Shield {
-    #[serde(alias = "id")]
-    human_id: String,
+    id: String,
     name: String,
     weight: u32,
     defense: u32,
     value: u32,
 }
 
-#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, derive_more::From)]
-pub struct ItemId(u64);
+impl Shield {
+    pub fn id(&self) -> &str {
+        &self.id
+    }
 
-impl std::fmt::Display for ItemId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:x}", self.0)
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn weight(&self) -> u32 {
+        self.weight
+    }
+
+    pub fn defense(&self) -> u32 {
+        self.defense
+    }
+
+    pub fn value(&self) -> u32 {
+        self.value
+    }
+}
+
+#[derive(
+    Debug, Hash, Clone, PartialEq, Eq, PartialOrd, Ord, derive_more::From, derive_more::Display,
+)]
+pub struct ItemId(String);
+
+impl ItemId {
+    pub fn new(s: &str) -> Self {
+        Self(s.to_owned())
     }
 }
 
@@ -123,13 +285,25 @@ pub enum AnyItem {
 }
 
 impl AnyItem {
-    pub fn human_id(&self) -> &str {
+    pub fn id(&self) -> ItemId {
         match self {
-            AnyItem::Apparel(i) => &i.human_id,
-            AnyItem::Weapon(i) => &i.human_id,
-            AnyItem::Food(i) => &i.human_id,
-            AnyItem::Potion(i) => &i.human_id,
-            AnyItem::Shield(i) => &i.human_id,
+            AnyItem::Apparel(i) => &i.id,
+            AnyItem::Weapon(i) => &i.id,
+            AnyItem::Food(i) => &i.id,
+            AnyItem::Potion(i) => &i.id,
+            AnyItem::Shield(i) => &i.id,
+        }
+        .to_owned()
+        .into()
+    }
+
+    pub fn name(&self) -> &str {
+        match self {
+            AnyItem::Apparel(i) => &i.name,
+            AnyItem::Weapon(i) => &i.name,
+            AnyItem::Food(i) => &i.name,
+            AnyItem::Potion(i) => &i.name,
+            AnyItem::Shield(i) => &i.name,
         }
     }
 
@@ -151,10 +325,6 @@ impl AnyItem {
             AnyItem::Potion(i) => i.value,
             AnyItem::Shield(i) => i.value,
         }
-    }
-
-    pub fn item_id(&self) -> ItemId {
-        hash_human_id(self.human_id())
     }
 
     pub fn is_apparel(&self) -> bool {
@@ -216,9 +386,19 @@ impl AnyItem {
             None
         }
     }
+
+    fn kind(&self) -> ItemKind {
+        match self {
+            AnyItem::Apparel(apparel) => ItemKind::Apparel(apparel.slot),
+            AnyItem::Weapon(_) => ItemKind::Weapon,
+            AnyItem::Food(_) => ItemKind::Food,
+            AnyItem::Potion(_) => ItemKind::Potion,
+            AnyItem::Shield(_) => ItemKind::Shield,
+        }
+    }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Resource, Debug, Clone, Default)]
 pub struct ItemManager {
     items: HashMap<ItemId, AnyItem>,
 }
@@ -229,24 +409,32 @@ impl ItemManager {
     }
 
     pub fn load_items<P: AsRef<Path>>(&mut self, path: P) -> anyhow::Result<()> {
-        let item_json = std::fs::read_to_string(dbg!(Path::new(ITEM_PATH).join(path)))?;
+        let path = Path::new(ITEM_PATH).join(path);
+        let item_json = std::fs::read_to_string(path)?;
         let item_file: ItemFile = serde_json::from_str(&item_json)?;
         item_file.into_iter().for_each(|item| {
-            let item_id: ItemId = item.item_id();
+            let item_id: ItemId = item.id();
             self.items.insert(item_id, item);
         });
         Ok(())
     }
 
-    pub fn get_item(&self, id: ItemId) -> Option<&AnyItem> {
-        self.items.get(&id)
+    pub fn with_load_items<P: AsRef<Path>>(mut self, path: P) -> anyhow::Result<Self> {
+        self.load_items(path)?;
+        Ok(self)
     }
 
-    pub fn get_item_by_human_id(&self, id: &str) -> Option<&AnyItem> {
-        self.items.get(&hash_human_id(id))
+    pub fn get_item(&self, id: &ItemId) -> Option<&AnyItem> {
+        self.items.get(id)
     }
 }
 
-pub fn hash_human_id(id: &str) -> ItemId {
-    FixedHasher::default().hash_one(id).into()
+#[cfg(test)]
+mod test {
+    use crate::ItemInstanceId;
+
+    #[test]
+    fn unique_instance_ids() {
+        assert_ne!(ItemInstanceId::new(), ItemInstanceId::new())
+    }
 }
