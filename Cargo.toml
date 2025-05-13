@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.98"
 bevy = { version = "0.16.0", features = ["dynamic_linking", "file_watcher"] }
+bevy_egui = "0.34.1"
 bevy_ratatui = "0.9.0"
 derive_more = { version = "2.0.1", features = ["from", "display"] }
 serde = { version = "1.0.219", features = ["derive"] }

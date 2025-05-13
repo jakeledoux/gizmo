@@ -5,16 +5,18 @@ mod events;
 mod items;
 mod scenes;
 mod systems;
+mod ui;
 mod utils;
 
 use bevy::{app::ScheduleRunnerPlugin, input::InputPlugin, prelude::*, state::app::StatesPlugin};
-use bevy_ratatui::{RatatuiContext, RatatuiPlugins};
+use bevy_egui::{EguiContextPass, EguiContexts, EguiPlugin};
 
 use components::*;
 use events::*;
 use items::*;
 use scenes::*;
 use systems::*;
+use ui::*;
 use utils::*;
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
@@ -35,12 +37,9 @@ fn main() -> anyhow::Result<()> {
     App::new()
         // TODO: make Manager structs support hot-reloading
         .add_plugins((
-            MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(frame_time)),
-            StatesPlugin,
-            InputPlugin,
-            RatatuiPlugins {
-                enable_input_forwarding: true,
-                ..default()
+            DefaultPlugins,
+            EguiPlugin {
+                enable_multipass_for_primary_context: true,
             },
         ))
         .insert_state(GameState::Dialogue)
@@ -71,7 +70,7 @@ fn main() -> anyhow::Result<()> {
             ),
         )
         // rendering
-        .add_systems(PostUpdate, render_system)
+        .add_systems(EguiContextPass, ui_system)
         // debug
         // .add_systems(Update, debug_quit_immediately)
         .add_systems(Update, exit_on_esc)
@@ -110,6 +109,12 @@ fn debug_quit_immediately(mut exit_event: EventWriter<AppExit>) {
     exit_event.write(AppExit::Success);
 }
 
-fn render_system(game_state: Res<State<GameState>>) {
-    // pass
+fn ui_system(mut contexts: EguiContexts, game_state: Res<State<GameState>>) {
+    match **game_state {
+        GameState::Map => todo!(),
+        GameState::Dialogue => {
+            dialogue_ui(contexts);
+        }
+        GameState::Battle => todo!(),
+    }
 }
