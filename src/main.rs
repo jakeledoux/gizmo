@@ -7,7 +7,8 @@ mod scenes;
 mod systems;
 mod utils;
 
-use bevy::prelude::*;
+use bevy::{app::ScheduleRunnerPlugin, input::InputPlugin, prelude::*, state::app::StatesPlugin};
+use bevy_ratatui::{RatatuiContext, RatatuiPlugins};
 
 use components::*;
 use events::*;
@@ -16,17 +17,50 @@ use scenes::*;
 use systems::*;
 use utils::*;
 
+#[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum GameState {
+    Map,
+    Dialogue,
+    Battle,
+}
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct MapSet;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct DialogueSet;
+
 fn main() -> anyhow::Result<()> {
+    let frame_time = std::time::Duration::from_secs_f32(1.0 / 60.0);
     App::new()
         // TODO: make Manager structs support hot-reloading
+        .add_plugins((
+            MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(frame_time)),
+            StatesPlugin,
+            InputPlugin,
+            RatatuiPlugins {
+                enable_input_forwarding: true,
+                ..default()
+            },
+        ))
+        .insert_state(GameState::Dialogue)
         .insert_resource(ItemManager::new())
         .insert_resource(SceneManager::new())
-        .add_plugins(DefaultPlugins)
         .add_event::<AttackEvent>()
         .add_event::<DamageEvent>()
         .add_event::<DeathEvent>()
+        .configure_sets(
+            Update,
+            (
+                MapSet.run_if(in_state(GameState::Map)),
+                DialogueSet.run_if(in_state(GameState::Dialogue)),
+            ),
+        )
         .add_systems(Startup, setup)
-        .add_systems(Update, (debug_attack, debug_show_all_entities, exit_on_esc))
+        .add_systems(
+            Update,
+            (debug_attack, debug_show_all_entities).in_set(MapSet),
+        )
         // event handlers
         .add_systems(
             Update,
@@ -36,7 +70,11 @@ fn main() -> anyhow::Result<()> {
                 DeathEvent::handler,
             ),
         )
-        .add_systems(Update, debug_quit_immediately)
+        // rendering
+        .add_systems(PostUpdate, render_system)
+        // debug
+        // .add_systems(Update, debug_quit_immediately)
+        .add_systems(Update, exit_on_esc)
         .run();
 
     Ok(())
@@ -57,8 +95,6 @@ fn setup(
         warn!("could not load scene: {e}")
     };
 
-    dbg!(scene_manager.get_scene("mike").unwrap());
-
     let mut jake = RpgEntity::new("Jake");
     if let Some(vampire_gloves) =
         ItemInstance::spawn(ItemId::new("dragonbone-sword"), &item_manager)
@@ -72,4 +108,8 @@ fn setup(
 
 fn debug_quit_immediately(mut exit_event: EventWriter<AppExit>) {
     exit_event.write(AppExit::Success);
+}
+
+fn render_system(game_state: Res<State<GameState>>) {
+    // pass
 }
