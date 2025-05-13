@@ -5,21 +5,26 @@ use bevy::{
 use bevy_egui::{
     EguiContexts, EguiInput,
     egui::{
-        self, Color32, Frame, Label, Margin, RichText, ScrollArea, SelectableLabel, Stroke,
-        TextStyle, Ui, Widget, Window, vec2,
+        self, Align2, CollapsingHeader, Color32, Frame, Label, Margin, RichText, ScrollArea,
+        SelectableLabel, Stroke, TextEdit, TextStyle, Ui, Widget, Window, vec2,
     },
 };
 
-use crate::{PlaySceneEvent, SceneManager, ScenePlayer, UiScenePart};
+use crate::{
+    EndSceneEvent, PlaySceneEvent, SceneManager, ScenePlayer, ScenePlayerInput, UiScenePart,
+};
 
 pub fn dialogue_ui(
     mut contexts: EguiContexts,
     scene_player: &mut ScenePlayer,
-    scene_manager: &SceneManager,
-) {
+    scene_manager: &mut SceneManager,
+) -> Option<ScenePlayerInput> {
+    let mut scene_player_input = None;
     let UiScenePart { line, responses } = scene_player.get_current(scene_manager);
 
     Window::new("Dialogue")
+        .collapsible(false)
+        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
         .frame(
             Frame::new()
                 .fill(Color32::BLUE)
@@ -60,22 +65,29 @@ pub fn dialogue_ui(
                         if let Some(responses) = responses {
                             responses.iter().enumerate().for_each(|(i, response)| {
                                 let selected = i == scene_player.highlighted_response();
-                                response_button(ui, &response.text, selected)
+                                if response_button(ui, &response.text, selected) {
+                                    scene_player_input = Some(ScenePlayerInput::Select(i));
+                                }
                             })
                         } else {
-                            response_button(ui, "<continue>", true)
+                            if response_button(ui, "<continue>", true) {
+                                scene_player_input = Some(ScenePlayerInput::SelectCurrent);
+                            };
                         }
                     })
                 })
             })
         });
+
+    scene_player_input
 }
 
-fn response_button(ui: &mut Ui, text: &str, selected: bool) {
+fn response_button(ui: &mut Ui, text: &str, selected: bool) -> bool {
     ui.add_sized(
         [ui.available_width(), 24.0],
         SelectableLabel::new(selected, text),
-    );
+    )
+    .clicked()
 }
 
 pub fn map_ui(
@@ -83,16 +95,21 @@ pub fn map_ui(
     play_scene_event: &mut EventWriter<PlaySceneEvent>,
     debug_new_scene_id: &mut String,
 ) {
-    Window::new("Dialogue").show(contexts.ctx_mut(), |ui| {
-        ui.label("Map UI");
-        Frame::new().show(ui, |ui| {
-            ui.label("Debug: Start Scene");
-            ui.horizontal(|ui| {
-                ui.text_edit_singleline(debug_new_scene_id);
-                if ui.button("start scene").clicked() {
-                    play_scene_event.write(PlaySceneEvent(debug_new_scene_id.to_owned().into()));
-                }
-            })
-        })
-    });
+    Window::new("Debug Panel")
+        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .show(contexts.ctx_mut(), |ui| {
+            CollapsingHeader::new("Play Scene")
+                .default_open(true)
+                .show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        TextEdit::singleline(debug_new_scene_id)
+                            .hint_text("scene id")
+                            .ui(ui);
+                        if ui.button("play").clicked() {
+                            play_scene_event
+                                .write(PlaySceneEvent(debug_new_scene_id.to_owned().into()));
+                        }
+                    })
+                })
+        });
 }

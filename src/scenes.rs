@@ -188,6 +188,30 @@ impl ScenePlayer {
         self.reset_line()
     }
 
+    fn select(&mut self, dialogue: &Dialogue, end_scene_event: &mut EventWriter<EndSceneEvent>) {
+        // execute response
+        if let Some(response) = dialogue
+            .responses
+            .as_ref()
+            .map(|responses| &responses[self.highlighted_response])
+        {
+            // TODO: commands, skill check, etc.
+            self.set_key(response.link.clone());
+        }
+        // continue
+        else {
+            if dialogue.lines.len() - 1 > self.current_line {
+                self.advance_line();
+            } else {
+                if let Some(ref section) = dialogue.continue_to {
+                    self.set_key(section.to_owned())
+                } else {
+                    end_scene_event.write(EndSceneEvent);
+                }
+            }
+        }
+    }
+
     pub fn get_current<'a>(&'a self, scene_manager: &'a SceneManager) -> UiScenePart<'a> {
         let dialogue = self.get_dialogue(scene_manager);
         let line = &dialogue.lines[self.current_line];
@@ -219,28 +243,12 @@ impl ScenePlayer {
                         .unwrap_or(0),
                 );
             }
-            ScenePlayerInput::Select => {
-                // execute response
-                if let Some(response) = dialogue
-                    .responses
-                    .as_ref()
-                    .map(|responses| &responses[self.highlighted_response])
-                {
-                    // TODO: commands, skill check, etc.
-                    self.set_key(response.link.clone());
-                }
-                // continue
-                else {
-                    if dialogue.lines.len() - 1 > self.current_line {
-                        self.advance_line();
-                    } else {
-                        if let Some(ref section) = dialogue.continue_to {
-                            self.set_key(section.to_owned())
-                        } else {
-                            end_scene_event.write(EndSceneEvent);
-                        }
-                    }
-                }
+            ScenePlayerInput::Select(i) => {
+                self.highlighted_response = i;
+                self.select(dialogue, end_scene_event);
+            }
+            ScenePlayerInput::Select(_) | ScenePlayerInput::SelectCurrent => {
+                self.select(dialogue, end_scene_event);
             }
         }
     }
@@ -254,7 +262,8 @@ impl ScenePlayer {
 pub enum ScenePlayerInput {
     MoveUp,
     MoveDown,
-    Select,
+    Select(usize),
+    SelectCurrent,
 }
 
 pub struct UiScenePart<'a> {
