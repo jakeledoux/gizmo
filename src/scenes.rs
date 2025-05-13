@@ -1,9 +1,17 @@
-use std::path::{Path, PathBuf};
+use std::{
+    ops::Add,
+    path::{Path, PathBuf},
+};
 
-use bevy::{asset::uuid::Uuid, log::warn, platform::collections::HashMap, prelude::Resource};
+use bevy::{
+    asset::uuid::Uuid,
+    log::warn,
+    platform::collections::HashMap,
+    prelude::{EventWriter, Resource},
+};
 use serde::Deserialize;
 
-use crate::components::ArmorSlot;
+use crate::{EndSceneEvent, components::ArmorSlot};
 
 #[cfg(debug_assertions)]
 const SCENE_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/scenes");
@@ -20,13 +28,24 @@ pub struct CharacterId(String);
 )]
 pub struct SceneSectionId(String);
 
+#[derive(
+    Deserialize, Debug, Hash, Clone, PartialEq, Eq, derive_more::From, derive_more::Display,
+)]
+pub struct SceneId(String);
+
+impl SceneId {
+    pub fn new(s: &str) -> Self {
+        Self(s.to_string())
+    }
+}
+
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Scene {
-    id: String,
+    id: SceneId,
     music: String,
     characters: HashMap<CharacterId, Character>,
-    dialogue: HashMap<String, Dialogue>,
+    dialogue: HashMap<SceneSectionId, Dialogue>,
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -53,14 +72,16 @@ pub struct Dialogue {
     responses: Option<Vec<Response>>,
     #[serde(flatten)]
     commands: Option<SceneCommands>,
+    #[serde(alias = "cont")]
+    continue_to: Option<SceneSectionId>,
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub struct Line {
-    from: CharacterId,
+    pub from: CharacterId,
     #[serde(alias = "txt")]
-    text: String,
+    pub text: String,
     #[serde(flatten)]
     commands: Option<SceneCommands>,
 }
@@ -69,7 +90,7 @@ pub struct Line {
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct Response {
     #[serde(alias = "txt")]
-    text: String,
+    pub text: String,
     #[serde(alias = "lnk")]
     link: SceneSectionId,
     skill_check: Option<SkillCheck>,
@@ -115,9 +136,135 @@ pub struct RewardGoldCommand {
     from: CharacterId,
 }
 
+#[derive(Resource, Debug, Clone)]
+pub struct ScenePlayer {
+    scene: SceneId,
+    current_key: SceneSectionId,
+    current_line: usize,
+    highlighted_response: usize,
+}
+
+impl ScenePlayer {
+    fn new(scene: SceneId) -> Self {
+        Self {
+            scene,
+            // TODO: load current_key from save
+            current_key: String::from("start").into(),
+            current_line: 0,
+            highlighted_response: 0,
+        }
+    }
+
+    fn get_scene<'a>(&self, scene_manager: &'a SceneManager) -> &'a Scene {
+        scene_manager.scenes.get(&self.scene).unwrap_or_else(|| {
+            panic!("no scene with ID: {:?}", self.scene);
+        })
+    }
+
+    fn get_dialogue<'a>(&self, scene_manager: &'a SceneManager) -> &'a Dialogue {
+        let scene = self.get_scene(scene_manager);
+        let Some(dialogue) = scene.dialogue.get(&self.current_key) else {
+            panic!(
+                "no such dialogue: {:?} in scene: {:#?}",
+                self.current_key, self.scene
+            )
+        };
+
+        dialogue
+    }
+
+    fn reset_line(&mut self) {
+        self.current_line = 0;
+        self.highlighted_response = 0;
+    }
+
+    fn advance_line(&mut self) {
+        self.current_line += 1;
+        self.highlighted_response = 0;
+    }
+
+    fn set_key(&mut self, key: SceneSectionId) {
+        self.current_key = key;
+        self.reset_line()
+    }
+
+    pub fn get_current<'a>(&'a self, scene_manager: &'a SceneManager) -> UiScenePart<'a> {
+        let dialogue = self.get_dialogue(scene_manager);
+        let line = &dialogue.lines[self.current_line];
+        let responses = if dialogue.lines.len() - 1 == self.current_line {
+            dialogue.responses.as_ref()
+        } else {
+            None
+        };
+        UiScenePart { line, responses }
+    }
+
+    pub fn input(
+        &mut self,
+        input: ScenePlayerInput,
+        scene_manager: &SceneManager,
+        end_scene_event: &mut EventWriter<EndSceneEvent>,
+    ) {
+        let dialogue = self.get_dialogue(scene_manager);
+        match input {
+            ScenePlayerInput::MoveUp => {
+                self.highlighted_response = self.highlighted_response.saturating_sub(1);
+            }
+            ScenePlayerInput::MoveDown => {
+                self.highlighted_response = self.highlighted_response.add(1).min(
+                    dialogue
+                        .responses
+                        .as_ref()
+                        .map(|responses| responses.len() - 1)
+                        .unwrap_or(0),
+                );
+            }
+            ScenePlayerInput::Select => {
+                // execute response
+                if let Some(response) = dialogue
+                    .responses
+                    .as_ref()
+                    .map(|responses| &responses[self.highlighted_response])
+                {
+                    // TODO: commands, skill check, etc.
+                    self.set_key(response.link.clone());
+                }
+                // continue
+                else {
+                    if dialogue.lines.len() - 1 > self.current_line {
+                        self.advance_line();
+                    } else {
+                        if let Some(ref section) = dialogue.continue_to {
+                            self.set_key(section.to_owned())
+                        } else {
+                            end_scene_event.write(EndSceneEvent);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn highlighted_response(&self) -> usize {
+        self.highlighted_response
+    }
+}
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+pub enum ScenePlayerInput {
+    MoveUp,
+    MoveDown,
+    Select,
+}
+
+pub struct UiScenePart<'a> {
+    pub line: &'a Line,
+    pub responses: Option<&'a Vec<Response>>,
+}
+
 #[derive(Resource, Debug, Clone, Default)]
 pub struct SceneManager {
-    scenes: HashMap<String, Scene>,
+    scenes: HashMap<SceneId, Scene>,
 }
 
 impl SceneManager {
@@ -138,7 +285,9 @@ impl SceneManager {
         Ok(self)
     }
 
-    pub fn get_scene(&self, id: &str) -> Option<&Scene> {
-        self.scenes.get(id)
+    pub fn play_scene(&self, scene: SceneId) -> Option<ScenePlayer> {
+        self.scenes
+            .contains_key(&scene)
+            .then(|| ScenePlayer::new(scene))
     }
 }

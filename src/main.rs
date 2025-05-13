@@ -42,12 +42,14 @@ fn main() -> anyhow::Result<()> {
                 enable_multipass_for_primary_context: true,
             },
         ))
-        .insert_state(GameState::Dialogue)
+        .insert_state(GameState::Map)
         .insert_resource(ItemManager::new())
         .insert_resource(SceneManager::new())
         .add_event::<AttackEvent>()
         .add_event::<DamageEvent>()
         .add_event::<DeathEvent>()
+        .add_event::<PlaySceneEvent>()
+        .add_event::<EndSceneEvent>()
         .configure_sets(
             Update,
             (
@@ -64,9 +66,13 @@ fn main() -> anyhow::Result<()> {
         .add_systems(
             Update,
             (
+                // RPG events
                 AttackEvent::handler,
                 DamageEvent::handler,
                 DeathEvent::handler,
+                // meta events
+                PlaySceneEvent::handler,
+                EndSceneEvent::handler,
             ),
         )
         // rendering
@@ -83,6 +89,7 @@ fn setup(
     mut commands: Commands,
     mut item_manager: ResMut<ItemManager>,
     mut scene_manager: ResMut<SceneManager>,
+    mut play_scene_events: EventWriter<PlaySceneEvent>,
 ) {
     commands.spawn(Camera2d);
 
@@ -103,17 +110,65 @@ fn setup(
     }
     commands.spawn((Player, jake));
     commands.spawn((Npc, RpgEntity::new("Boba Fett")));
+
+    commands.insert_resource(DebugPlaySceneId::default())
+    // play_scene_events.write(PlaySceneEvent(SceneId::new("mike")));
 }
+
+#[derive(Resource, Default)]
+struct DebugPlaySceneId(String);
 
 fn debug_quit_immediately(mut exit_event: EventWriter<AppExit>) {
     exit_event.write(AppExit::Success);
 }
 
-fn ui_system(mut contexts: EguiContexts, game_state: Res<State<GameState>>) {
+fn ui_system(
+    mut contexts: EguiContexts,
+    game_state: Res<State<GameState>>,
+    scene_manager: Res<SceneManager>,
+    mut scene_player: Option<ResMut<ScenePlayer>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut play_scene_event: EventWriter<PlaySceneEvent>,
+    mut end_scene_event: EventWriter<EndSceneEvent>,
+    mut debug_new_scene_id: ResMut<DebugPlaySceneId>,
+) {
     match **game_state {
-        GameState::Map => todo!(),
+        GameState::Map => {
+            map_ui(contexts, &mut play_scene_event, &mut debug_new_scene_id.0);
+        }
         GameState::Dialogue => {
-            dialogue_ui(contexts);
+            let Some(ref mut scene_player) = scene_player else {
+                return;
+            };
+            dialogue_ui(contexts, scene_player, &scene_manager);
+
+            if keyboard_input.just_pressed(KeyCode::KeyW)
+                || keyboard_input.just_pressed(KeyCode::ArrowUp)
+            {
+                scene_player.input(
+                    ScenePlayerInput::MoveUp,
+                    &scene_manager,
+                    &mut end_scene_event,
+                )
+            }
+            if keyboard_input.just_pressed(KeyCode::KeyS)
+                || keyboard_input.just_pressed(KeyCode::ArrowDown)
+            {
+                scene_player.input(
+                    ScenePlayerInput::MoveDown,
+                    &scene_manager,
+                    &mut end_scene_event,
+                )
+            }
+            if keyboard_input.just_pressed(KeyCode::KeyE)
+                || keyboard_input.just_pressed(KeyCode::Enter)
+            {
+                scene_player.input(
+                    ScenePlayerInput::Select,
+                    &scene_manager,
+                    &mut end_scene_event,
+                )
+            }
         }
         GameState::Battle => todo!(),
     }

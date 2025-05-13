@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{ItemManager, components::*};
+use crate::{GameState, ItemManager, SceneId, SceneManager, ScenePlayer, components::*};
 
 #[derive(Event)]
 pub struct AttackEvent {
@@ -75,6 +75,51 @@ impl DeathEvent {
             let victim = query.get(victim_id).unwrap();
             info!("{:?} has died", victim.name());
             commands.entity(victim_id).despawn();
+        }
+    }
+}
+
+#[derive(Event)]
+pub struct PlaySceneEvent(pub SceneId);
+
+impl PlaySceneEvent {
+    pub fn handler(
+        mut commands: Commands,
+        scene_manager: Res<SceneManager>,
+        mut play_scene_events: EventReader<PlaySceneEvent>,
+    ) {
+        let play_scene_events = play_scene_events.read();
+        if play_scene_events.len() > 1 {
+            warn!("more than one play scene event is queued")
+        }
+        if let Some(play_scene_event) = play_scene_events.last() {
+            if let Some(scene) = scene_manager.play_scene(play_scene_event.0.clone()) {
+                info!("playing scene: {:?}", play_scene_event.0);
+                commands.insert_resource(scene);
+                commands.set_state(GameState::Dialogue)
+            } else {
+                warn!("was not able to play scene: {:?}", play_scene_event.0)
+            }
+        }
+    }
+}
+
+#[derive(Event)]
+pub struct EndSceneEvent;
+
+impl EndSceneEvent {
+    pub fn handler(
+        mut commands: Commands,
+        scene_manager: Res<SceneManager>,
+        mut end_scene_events: EventReader<EndSceneEvent>,
+    ) {
+        let end_scene_events = end_scene_events.read();
+        if end_scene_events.len() > 1 {
+            warn!("more than one end scene event is queued")
+        }
+        if end_scene_events.count() > 0 {
+            commands.remove_resource::<ScenePlayer>();
+            commands.set_state(GameState::Map);
         }
     }
 }
