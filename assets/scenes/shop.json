@@ -1,0 +1,18 @@
+{
+  "id": "shop",
+  "dialogue": {
+    "start": {
+      "lines": [
+        {
+          "from": "Shopkeeper",
+          "txt": "Read the sign, idiot!"
+        },
+        {
+          "from": "The Sign",
+          "txt": "The sign reads: \"We're closed, idiot.\"",
+          "style": "info"
+        }
+      ]
+    }
+  }
+}

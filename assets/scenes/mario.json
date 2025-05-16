@@ -1,0 +1,784 @@
+{
+  "id": "mario",
+  "quests": {
+    "itsa-me": {
+      "name": "It's-a Me!",
+      "on-complete": {
+        "reward-experience": {
+          "amount": 5000
+        }
+      },
+      "stages": [
+        {
+          "desc": "Find out what's wrong with %Mario%."
+        },
+        {
+          "desc": "Go buy %Mario%'s heroin from Terry in the forest."
+        },
+        {
+          "desc": "Return the heroin to %Mario%."
+        },
+        {
+          "desc": "Buy Nalaxone from %Terry% to save %Mario% from overdosing."
+        }
+      ]
+    }
+  },
+  "vendors": {
+    "mario-corpse": {
+      "name": "Mario's Corpse",
+      "daily-gold": 12,
+      "preset-inventory": ["peach-photo"]
+    }
+  },
+  "characters": {
+    "mario": {
+      "name": "Mario",
+      "image": "images/mario_distressed.png",
+      "voice": "mario"
+    }
+  },
+  "dialogue": {
+    "start": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "It's-a me!<pause> Mario!",
+          "start-quest": "itsa-me"
+        }
+      ],
+      "cont": "not-feeling-good"
+    },
+    "not-feeling-good": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "I'm-a not-a feeling so good...",
+          "image": "images/mario_pain.png"
+        }
+      ],
+      "resp-lnk": "not-feeling-good-resp"
+    },
+    "not-feeling-good-resp": {
+      "resp": [
+        {
+          "txt": "It's-a who?",
+          "lnk": "who"
+        },
+        {
+          "txt": "You look terrible.",
+          "lnk": "look-terrible"
+        },
+        {
+          "txt": "What's wrong?",
+          "lnk": "whats-wrong"
+        }
+      ]
+    },
+    "who": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "Me!<hpause> Mario!"
+        }
+      ],
+      "resp-lnk": "not-feeling-good-resp"
+    },
+    "look-terrible": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "+Vaffanculo! Faccia di culo!+",
+          "image": "images/mario_angry.png"
+        }
+      ],
+      "cont": "whats-wrong"
+    },
+    "whats-wrong": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "I'm-a shaking and-a sweating like a goddamn porchetta!",
+          "image": "images/mario_pain.png"
+        },
+        {
+          "from": "mario",
+          "txt": "And my-a insides... they're as twisted up as-a mama's spaghetti!"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "What can I do to help?",
+          "lnk": "need-another"
+        },
+        {
+          "txt": "You're on-a your own-a!",
+          "lnk": "fuck-you"
+        },
+        {
+          "txt": "Sounds like withdrawal symptoms to me.",
+          "skill-check": {
+            "check": "intelligence",
+            "modifier": -3,
+            "lnk-fail": "low-int"
+          },
+          "lnk": "high-int"
+        }
+      ]
+    },
+    "fuck-you": {
+      "scene-entry": {
+        "mario": "fuck-you"
+      },
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "Fuck-a you!",
+          "image": "images/mario_angry.png",
+          "fail-quest": "itsa-me"
+        }
+      ]
+    },
+    "low-int": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "No-a shit-a!<hpause> What are you, a doctor?",
+          "image": "images/mario_angry.png"
+        },
+        {
+          "from": "mario",
+          "txt": "I'm-a takin' a one-way ride to my grave-a!",
+          "image": "images/mario_pain.png"
+        }
+      ],
+      "cont": "need-another"
+    },
+    "high-int": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "You're right. I'm in-a some deep-a shit.",
+          "image": "images/mario_sad.png"
+        }
+      ],
+      "cont": "need-another"
+    },
+    "need-another": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "I'm-a needing another fix real-a soon-a!"
+        },
+        {
+          "from": "mario",
+          "txt": "But I'm-a too weak-a to go get it!"
+        }
+      ],
+      "resp-lnk": "help-decision"
+    },
+    "help-decision": {
+      "resp": [
+        {
+          "txt": "Jesus Christ.",
+          "lnk": "help-me"
+        },
+        {
+          "txt": "Another fix of what?",
+          "lnk": "of-what"
+        },
+        {
+          "txt": "You want me to buy you drugs?",
+          "lnk": "buy-drugs"
+        }
+      ]
+    },
+    "help-me": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "Please, you've-a gotta help me!"
+        }
+      ],
+      "resp-lnk": "help-decision"
+    },
+    "of-what": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "The skag!<hpause> Snow!<hpause> China white!<hpause> I need-a some heroin!"
+        }
+      ],
+      "cont": "instructions"
+    },
+    "buy-drugs": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "YES!"
+        }
+      ],
+      "cont": "instructions"
+    },
+    "instructions": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "I've-a got a hook-up down-a in the forest."
+        },
+        {
+          "from": "mario",
+          "txt": "You must-a go get-a my drugs. I beg-a you!"
+        }
+      ],
+      "resp-lnk": "final-decision"
+    },
+    "final-decision": {
+      "resp": [
+        {
+          "txt": "Fine. I'll do it.",
+          "lnk": "accept"
+        },
+        {
+          "txt": "No way, buddy.",
+          "lnk": "decline"
+        },
+        {
+          "txt": "What's in it for me?",
+          "lnk": "reward-inquiry"
+        }
+      ]
+    },
+    "accept": {
+      "scene-entry": {
+        "mario": "waiting"
+      },
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "Oh thank god!"
+        },
+        {
+          "from": "mario",
+          "txt": "My dealer... his-a name is Terry. If he-a mentions dragons,  ask-a him if he's-a tried looking up. It's-a code."
+        },
+        {
+          "from": "mario",
+          "txt": "I'll-a be here-a waiting.",
+          "set-quest-stage": {
+            "quest": "itsa-me",
+            "stage": 1
+          }
+        }
+      ]
+    },
+    "decline": {
+      "scene-entry": {
+        "mario": "reconsider"
+      },
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "I'm-a gonna die-a!",
+          "image": "images/mario_sad.png"
+        }
+      ]
+    },
+    "reward-inquiry": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "Please, I'll-a do anything!",
+          "image": "images/mario_pain.png"
+        },
+        {
+          "from": "mario",
+          "txt": "Just help me!"
+        }
+      ],
+      "resp-lnk": "final-decision"
+    },
+    "reconsider": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "Please help-a me!"
+        }
+      ],
+      "resp-lnk": "final-decision"
+    },
+    "waiting": {
+      "cont-if": "waiting-over",
+      "cont-else": "waiting-hurry",
+      "cont-cond": [
+        {
+          "type": "quest-stage",
+          "quest": "itsa-me",
+          "stage": 2
+        }
+      ]
+    },
+    "waiting-hurry": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "Please-a hurry!",
+          "image": "images/mario_pain.png"
+        }
+      ]
+    },
+    "waiting-over": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "You're-a back! Do you-a have my-a drugs-a?"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "I've got them right here.",
+          "lnk": "hand-over",
+          "cond": [
+            {
+              "type": "has-item",
+              "item": "heroin"
+            }
+          ]
+        },
+        {
+          "txt": "Whoops... I may have done something with them...",
+          "cond": [
+            {
+              "type": "not",
+              "cond": [
+                {
+                  "type": "has-item",
+                  "item": "heroin"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "txt": "Maybe you don't need it.",
+          "cond": [
+            {
+              "type": "not",
+              "cond": [
+                {
+                  "type": "var-equals",
+                  "var": "mario-convince-sober-attempted",
+                  "value": "yes"
+                }
+              ]
+            }
+          ],
+          "skill-check": {
+            "check": "charisma",
+            "modifier": 3,
+            "lnk-fail": "dont-need-it-fail"
+          },
+          "lnk": "dont-need-it-success"
+        },
+        {
+          "txt": "Not yet.",
+          "lnk": "waiting-hurry"
+        }
+      ]
+    },
+    "dont-need-it-success": {
+      "vars": {
+        "mario-convince-sober-attempted": "yes"
+      },
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "Of course I do-a. Look at me, I'm-a going to die-a!"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "You're an addict. You have a problem.",
+          "lnk": "addict",
+          "skill-check": {
+            "check": "charisma",
+            "modifier": -2,
+            "lnk-fail": "addict-fail"
+          }
+        },
+        {
+          "txt": "If you continue like this you'll die.",
+          "lnk": "dont-need-it-fail"
+        },
+        {
+          "txt": "You're right, nevermind.",
+          "lnk": "waiting-hurry"
+        }
+      ]
+    },
+    "addict-fail": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "No I'm-a not-a!"
+        },
+        {
+          "from": "mario",
+          "txt": "Now-a go get-a my drugs-a."
+        }
+      ]
+    },
+    "dont-need-it-fail": {
+      "vars": {
+        "mario-convince-sober-attempted": "yes"
+      },
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "Bull-a-shit. Now-a go get-a my drugs-a."
+        }
+      ]
+    },
+    "hand-over": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "Let's-a go!"
+        },
+        {
+          "from": "mario",
+          "txt": "Hand-a them the fuck over before I fucking die-a.",
+          "remove-item": {
+            "item": "heroin",
+            "method": "give",
+            "recipient": "mario"
+          }
+        },
+        {
+          "from": "mario",
+          "txt": "Thank-a you so much-a! I'm-a gonna shoot up now."
+        },
+        {
+          "from": "narrator",
+          "txt": "%Mario% ties off his forearm and inserts the needle. He begins to inject the heroin.",
+          "style": "info"
+        },
+        {
+          "from": "mario",
+          "txt": "Oh yeah!"
+        },
+        {
+          "from": "narrator",
+          "txt": "%Mario% slumps back as the relief sets in.",
+          "style": "info"
+        },
+        {
+          "from": "narrator",
+          "txt": "Suddenly his eyes go wide.",
+          "style": "info"
+        },
+        {
+          "from": "mario",
+          "txt": "Wait a minute-a..."
+        },
+        {
+          "from": "mario",
+          "txt": "Did that-a bastard cut-a this with something?"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "Can I just have my reward now?",
+          "lnk": "overdose"
+        },
+        {
+          "txt": "Is something wrong?",
+          "lnk": "overdose"
+        },
+        {
+          "txt": "I don't know.",
+          "lnk": "overdose"
+        }
+      ]
+    },
+    "overdose": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "..."
+        }
+      ],
+      "resp": [
+        {
+          "txt": "Helloooo? Reward?",
+          "lnk": "overdose-1"
+        },
+        {
+          "txt": "Are you okay?",
+          "lnk": "overdose-1"
+        },
+        {
+          "txt": "umm?",
+          "lnk": "overdose-1"
+        }
+      ]
+    },
+    "overdose-1": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "flbbbbpbbpbpbbobd"
+        },
+        {
+          "from": "narrator",
+          "txt": "Foam starts pouring out of %Mario%'s mouth.",
+          "style": "info"
+        },
+        {
+          "from": "mario",
+          "txt": "pluusdfbbbjblbbspbdbdpsdhesdfbuububb"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "Oh my god, he's overdosing!",
+          "lnk": "overdose-2"
+        },
+        {
+          "txt": "MARIO???",
+          "lnk": "overdose-2"
+        },
+        {
+          "txt": "Serves him right.",
+          "lnk": "overdose-2"
+        }
+      ]
+    },
+    "overdose-2": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "LFLUUUUBBBB"
+        },
+        {
+          "from": "mario",
+          "txt": "MAAAAMMMFDSFAAA MIIIAAAAAA"
+        },
+        {
+          "from": "mario",
+          "txt": "ggguuuuurrgggg you-a gottahp heelfffp flmeeeee"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "Hold on, Mario! I'll go get help!",
+          "set-quest-stage": {
+            "quest": "itsa-me",
+            "stage": 3
+          },
+          "scene-entry": {
+            "mario": "get-help"
+          }
+        },
+        {
+          "txt": "Ha ha ha, die!",
+          "lnk": "watch-die"
+        },
+        {
+          "txt": "(Inject %Mario% with Nalaxone)",
+          "lnk": "saved",
+          "cond": [
+            {
+              "type": "has-item",
+              "item": "nalaxone"
+            }
+          ]
+        }
+      ]
+    },
+    "watch-die": {
+      "lines": [
+        {
+          "from": "narrator",
+          "txt": "You watch as the life drains from %Mario%'s eyes. He begins to scream in terror, but soon ceases. His body slumps over and falls to the  ground. He is dead.",
+          "style": "info",
+          "kill-character": "mario",
+          "complete-quest": "itsa-me"
+        }
+      ]
+    },
+    "get-help": {
+      "lines": [
+        {
+          "from": "narrator",
+          "txt": "You see %Mario%'s foaming lifeless corpse on the ground, the needle having broken off in his arm during his fall.",
+          "style": "info"
+        },
+        {
+          "from": "narrator",
+          "txt": "You are too late.",
+          "style": "info",
+          "kill-character": "mario",
+          "complete-quest": "itsa-me"
+        }
+      ]
+    },
+    "saved": {
+      "remove-item": {
+        "item": "nalaxone",
+        "show-message": "no"
+      },
+      "lines": [
+        {
+          "from": "narrator",
+          "txt": "You inject %Mario% with your Nalaxone syringe.",
+          "style": "info"
+        },
+        {
+          "from": "narrator",
+          "txt": "Over the course of a minute, %Mario%'s seizures begin to subside.",
+          "style": "info",
+          "update-characters": {
+            "mario": {
+              "image": "images/mario_happy.png"
+            }
+          }
+        },
+        {
+          "from": "mario",
+          "txt": "You saved-a my life-a!"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "I better be getting payed double for this shit.",
+          "lnk": "paid-double"
+        },
+        {
+          "txt": "Are you okay?",
+          "lnk": "are-you-okay"
+        },
+        {
+          "txt": "You're a fucking addict.",
+          "lnk": "addict"
+        }
+      ]
+    },
+    "addict": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "I know...",
+          "image": "images/mario_distressed.png"
+        },
+        {
+          "from": "mario",
+          "txt": "I'm-a such a goddamn failure.",
+          "image": "images/mario_sad.png"
+        },
+        {
+          "from": "mario",
+          "txt": "My-a marriage fell apart and I-a lost the kids-a.",
+          "image": "images/mario_sad.png"
+        },
+        {
+          "from": "mario",
+          "txt": "I can't-a take it anymore-a.",
+          "image": "images/mario_sad.png"
+        },
+        {
+          "from": "narrator",
+          "txt": "%Mario% takes out a razor blade from his pocket.",
+          "style": "info"
+        },
+        {
+          "from": "mario",
+          "txt": "Goodbye-a cruel world...",
+          "image": "images/mario_sad.png"
+        },
+        {
+          "from": "narrator",
+          "txt": "%Mario% slits his wrists with the blade.",
+          "style": "info"
+        },
+        {
+          "from": "mario",
+          "txt": "Tell-a Satan...",
+          "image": "images/mario_sad.png"
+        },
+        {
+          "from": "mario",
+          "txt": "...it's-a me...",
+          "image": "images/mario_sad.png"
+        },
+        {
+          "from": "mario",
+          "txt": "...%Mario%.",
+          "image": "images/mario_sad.png"
+        },
+        {
+          "from": "narrator",
+          "txt": "As the life drains from %Mario%'s eyes, his body slumps over and falls to the ground. He is dead.",
+          "style": "info",
+          "kill-character": "mario",
+          "complete-quest": "itsa-me"
+        }
+      ]
+    },
+    "paid-double": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "Of course-a! Anything!"
+        }
+      ],
+      "cont": "thank-you"
+    },
+    "are-you-okay": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "Yes, I'm-a feeling much better."
+        }
+      ],
+      "cont": "thank-you"
+    },
+    "thank-you": {
+      "scene-entry": {
+        "mario": "thanks-again"
+      },
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "Thank-a you so-a much-a, I owe you everything."
+        },
+        {
+          "from": "mario",
+          "txt": "Here, take-a this. It's all I have-a.",
+          "image": "images/mario.png",
+          "reward-gold": {
+            "amount": 1346,
+            "method": "gift",
+            "from": "mario"
+          }
+        },
+        {
+          "from": "mario",
+          "txt": "Oh, and one-a more thing-a.",
+          "image": "images/mario.png",
+          "reward-item": "peach-photo"
+        }
+      ],
+      "cont": "thanks-again"
+    },
+    "thanks-again": {
+      "lines": [
+        {
+          "from": "mario",
+          "txt": "Thank-a you for everything-a.",
+          "complete-quest": "itsa-me"
+        }
+      ]
+    }
+  }
+}

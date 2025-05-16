@@ -8,6 +8,8 @@ mod systems;
 mod ui;
 mod utils;
 
+use std::path::Path;
+
 use bevy::{app::ScheduleRunnerPlugin, input::InputPlugin, prelude::*, state::app::StatesPlugin};
 use bevy_egui::{EguiContextPass, EguiContexts, EguiPlugin};
 
@@ -18,6 +20,12 @@ use scenes::*;
 use systems::*;
 use ui::*;
 use utils::*;
+
+// TODO: use bevy asset loader somehow
+#[cfg(debug_assertions)]
+const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets");
+#[cfg(not(debug_assertions))]
+const ASSETS_PATH: &str = "assets";
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum GameState {
@@ -90,14 +98,15 @@ fn setup(
     mut item_manager: ResMut<ItemManager>,
     mut scene_manager: ResMut<SceneManager>,
     mut play_scene_events: EventWriter<PlaySceneEvent>,
+    mut server: Res<AssetServer>,
 ) {
     commands.spawn(Camera2d);
 
-    if let Err(e) = item_manager.load_items("skyrim.json") {
+    if let Err(e) = item_manager.load_folder(Path::new(ASSETS_PATH).join("items")) {
         warn!("could not load items: {e}")
     };
 
-    if let Err(e) = scene_manager.load_scene("mike.json") {
+    if let Err(e) = scene_manager.load_folder(Path::new(ASSETS_PATH).join("scenes")) {
         warn!("could not load scene: {e}")
     };
 
@@ -142,7 +151,7 @@ fn ui_system(
             };
 
             if let Some(input) = dialogue_ui(contexts, scene_player, &mut scene_manager) {
-                scene_player.input(input, &scene_manager, &mut end_scene_event)
+                scene_player.input(input, &mut scene_manager, &mut end_scene_event)
             }
 
             if keyboard_input.just_pressed(KeyCode::KeyW)
@@ -150,7 +159,7 @@ fn ui_system(
             {
                 scene_player.input(
                     ScenePlayerInput::MoveUp,
-                    &scene_manager,
+                    &mut scene_manager,
                     &mut end_scene_event,
                 )
             }
@@ -159,7 +168,7 @@ fn ui_system(
             {
                 scene_player.input(
                     ScenePlayerInput::MoveDown,
-                    &scene_manager,
+                    &mut scene_manager,
                     &mut end_scene_event,
                 )
             }
@@ -168,7 +177,7 @@ fn ui_system(
             {
                 scene_player.input(
                     ScenePlayerInput::SelectCurrent,
-                    &scene_manager,
+                    &mut scene_manager,
                     &mut end_scene_event,
                 )
             }

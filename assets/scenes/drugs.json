@@ -1,0 +1,250 @@
+{
+  "id": "drugs-demo",
+  "vars": {
+    "alive": true
+  },
+  "characters": {
+    "nate-almighty": {
+      "name": "?"
+    },
+    "ronald-reagan": {
+      "name": "Ronald Reagan",
+      "image": "images/ronald.png"
+    }
+  },
+  "dialogue": {
+    "start": {
+      "lines": [
+        {
+          "from": "nate-almighty",
+          "txt": "So you're finally awake..."
+        },
+        {
+          "from": "nate-almighty",
+          "txt": "I was wondering how long you'd stay out, %$NAME%."
+        },
+        {
+          "from": "nate-almighty",
+          "txt": "I'm sure you have lots of questions, and I will kindly answer them."
+        }
+      ],
+      "cont": "questions"
+    },
+    "questions": {
+      "lines": [
+        {
+          "from": "nate-almighty",
+          "txt": "What would you like to know?"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "Who are you?",
+          "lnk": "who"
+        },
+        {
+          "txt": "Where am I?",
+          "lnk": "where"
+        },
+        {
+          "txt": "How did I get here?",
+          "lnk": "how"
+        }
+      ]
+    },
+    "who": {
+      "lines": [
+        {
+          "from": "nate-almighty",
+          "txt": "My name is %Nate, the Almighty%...",
+          "update-characters": {
+            "nate-almighty": {
+              "name": "Nate",
+              "image": "images/nate.png"
+            }
+          }
+        },
+        {
+          "from": "nate-almighty",
+          "txt": "...+destroyer of worlds+."
+        }
+      ],
+      "cont": "questions"
+    },
+    "where": {
+      "lines": [
+        {
+          "from": "nate-almighty",
+          "txt": "You are both everywhere and nowhere."
+        }
+      ],
+      "resp": [
+        {
+          "txt": "That's a useless answer.",
+          "lnk": "where-useless"
+        },
+        {
+          "txt": "Ummm... okay.",
+          "lnk": "questions"
+        }
+      ]
+    },
+    "where-useless": {
+      "lines": [
+        {
+          "from": "nate-almighty",
+          "txt": "And yet it remains the truth."
+        }
+      ],
+      "cont": "questions"
+    },
+    "how": {
+      "update-characters": {
+        "nate-almighty": {
+          "name": "Nate",
+          "image": "images/nate.png"
+        }
+      },
+      "lines": [
+        {
+          "from": "nate-almighty",
+          "txt": "You took too many mushrooms at your friend's house-party. You are currently tripping absolute balls."
+        }
+      ],
+      "resp": [
+        {
+          "txt": "o shit, u rite",
+          "lnk": "how-2"
+        },
+        {
+          "txt": "I wouldn't!",
+          "lnk": "how-denial"
+        }
+      ]
+    },
+    "how-denial": {
+      "lines": [
+        {
+          "from": "nate-almighty",
+          "txt": "I can only offer the truth, whether or not you choose to accept it is of your own free will."
+        }
+      ],
+      "cont": "how-2"
+    },
+    "how-2": {
+      "lines": [
+        {
+          "from": "nate-almighty",
+          "txt": "Would you like to wake up now?"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "Yes! Get me out!",
+          "lnk": "wake"
+        },
+        {
+          "txt": "No, I want to stay here forever.",
+          "lnk": "stay"
+        },
+        {
+          "txt": "Yeah but first I'm gonna kick your ass.",
+          "lnk": "battle-nate"
+        }
+      ]
+    },
+    "wake": {
+      "lines": [
+        {
+          "from": "nate-almighty",
+          "txt": "As you wish. Goodbye, young traveler. Fare thee well."
+        },
+        {
+          "from": "narrator",
+          "txt": "You wake up and forget about the whole event.",
+          "style": "info"
+        }
+      ],
+      "cont": "end"
+    },
+    "battle-nate": {
+      "lines": [
+        {
+          "from": "nate-almighty",
+          "txt": "As you wish...",
+          "update-characters": {
+            "nate-almighty": {
+              "image": "images/nate_angry.png"
+            }
+          }
+        },
+        {
+          "from": "nate-almighty",
+          "txt": "PREPARE TO DIE!!!",
+          "battle": "nate-almighty"
+        }
+      ],
+      "cont": "wake-battle"
+    },
+    "wake-battle": {
+      "lines": [
+        {
+          "from": "narrator",
+          "txt": "You wake up victorious. As you regain consciousness, your memory of the event fades.",
+          "style": "info"
+        },
+        {
+          "from": "Tony",
+          "txt": "Dude, did you just piss your pants?"
+        }
+      ],
+      "cont": "end"
+    },
+    "stay": {
+      "vars": {
+        "alive": false
+      },
+      "lines": [
+        {
+          "from": "nate-almighty",
+          "txt": "As you wish. You will stay here forever."
+        },
+        {
+          "from": "narrator",
+          "txt": "Your friends weep as they watch the paramedics zip the bag around your foaming, lifeless body.",
+          "style": "info"
+        },
+        {
+          "from": "Tony",
+          "txt": "I should have never brought the dangerous drugs!"
+        },
+        {
+          "from": "Tony",
+          "txt": "Now he's dead of an overdose and it's all my fault!"
+        },
+        {
+          "from": "ronald-reagan",
+          "txt": "That's right, %Tony%. The drugs killed him and it *is* all your fault."
+        },
+        {
+          "from": "Tony",
+          "txt": "R... %Ronald Reagan%?"
+        },
+        {
+          "from": "ronald-reagan",
+          "txt": "Remember folks, drugs are bad and *will* kill you. Please vote for me."
+        }
+      ],
+      "cont": "end"
+    },
+    "end": {
+      "lines": [
+        {
+          "from": "narrator",
+          "txt": "THE END",
+          "style": "info"
+        }
+      ]
+    }
+  }
+}

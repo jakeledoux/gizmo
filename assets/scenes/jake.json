@@ -1,0 +1,420 @@
+{
+  "id": "jake",
+  "characters": {
+    "jake": {
+      "name": "Jacob Ledoux",
+      "image": "images/jake.png",
+      "voice": "jacob"
+    }
+  },
+  "music": "king_and_country",
+  "dialogue": {
+    "start": {
+      "lines": [
+        {
+          "from": "jake",
+          "txt": "Not often does this old man hear knocking at his door."
+        },
+        {
+          "from": "jake",
+          "txt": "Tell me, young adventurer, what is your name?"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "$NAME",
+          "lnk": "quest",
+          "vars": {
+            "jakes-nick": "$NAME"
+          }
+        },
+        {
+          "txt": "Chrundle the Great",
+          "lnk": "quest",
+          "vars": {
+            "jakes-nick": "Chrundle the Great"
+          }
+        },
+        {
+          "txt": "Hingle McCringleberry",
+          "lnk": "quest",
+          "vars": {
+            "jakes-nick": "Hingle McCringleberry"
+          }
+        }
+      ]
+    },
+    "quest": {
+      "lines": [
+        {
+          "from": "jake",
+          "txt": "What a...<pause> pleasant name."
+        },
+        {
+          "from": "jake",
+          "txt": "Believe it or not, %$jakes-nick%, I used to be an adventurer such as yourself. I was young then."
+        },
+        {
+          "from": "jake",
+          "txt": "Unfortunately everything changed after the accident with the arrow..."
+        },
+        {
+          "from": "jake",
+          "txt": "Oh I shouldn't burden you with an old man's regrets. Those are mine alone to deal with. But there is something that may be of interest to you;"
+        },
+        {
+          "from": "jake",
+          "txt": "Shortly before the incident that cost me my knee, I buried some gold in the forest. It was dirty money, you see. I decided to hide it until the kingsman had ceased their inquiries of the event."
+        },
+        {
+          "from": "jake",
+          "txt": "That's where you come in. I was injured before I had gone back to dig up my treasure. If you were to retrieve it for me you would bring finality to this elder's story.",
+          "start-quest": "lost-treasure"
+        },
+        {
+          "from": "jake",
+          "txt": "Ha<tpause> ha<tpause> ha<tpause>, yes I know what you're thinking. You can indeed expect a reward should you complete my task. We're not so different, %$jakes-nick%."
+        }
+      ],
+      "resp": [
+        {
+          "txt": "Actually I already found your gold.",
+          "lnk": "coin-found",
+          "cond": [
+            {
+              "type": "quest-stage",
+              "quest": "lost-treasure",
+              "stage": 1
+            }
+          ]
+        },
+        {
+          "txt": "I'll get your gold for you.",
+          "lnk": "quest-accept"
+        },
+        {
+          "txt": "Nah, that sounds lame.",
+          "lnk": "quest-reject"
+        },
+        {
+          "txt": "Your gold is all mine, old man!",
+          "lnk": "quest-reject"
+        }
+      ]
+    },
+    "quest-accept": {
+      "lines": [
+        {
+          "from": "jake",
+          "txt": "Wonderful!"
+        },
+        {
+          "from": "jake",
+          "txt": "You are a noble one. The gold is buried somewhere around the south end of the forest. It should be fairly grown-over by now, but you may still be able to spot it."
+        },
+        {
+          "from": "jake",
+          "txt": "Fare thee well, young %$jakes-nick%!",
+          "scene-entry": {
+            "jake": "wait-coin"
+          }
+        }
+      ]
+    },
+    "quest-reject": {
+      "lines": [
+        {
+          "from": "jake",
+          "txt": "I hope you'll reconsider.",
+          "scene-entry": {
+            "jake": "wait-coin"
+          }
+        }
+      ]
+    },
+    "wait-coin": {
+      "lines": [
+        {
+          "from": "jake",
+          "txt": "Ah, the young traveler returns!<tpause> Do you bring good news?"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "I found your treasure!",
+          "lnk": "coin-found",
+          "cond": [
+            {
+              "type": "quest-stage",
+              "quest": "lost-treasure",
+              "stage": 1
+            }
+          ]
+        },
+        {
+          "txt": "Not yet.",
+          "lnk": "not-yet"
+        }
+      ]
+    },
+    "not-yet": {
+      "lines": [
+        {
+          "from": "jake",
+          "txt": "Then I await our next meeting!"
+        }
+      ]
+    },
+    "coin-found": {
+      "lines": [
+        {
+          "from": "jake",
+          "txt": "Ah! By the Gods!"
+        },
+        {
+          "from": "jake",
+          "txt": "Kindly hand it over, and please be gentle. I am old and frail."
+        }
+      ],
+      "cont-if": "quest-finished",
+      "cont-else": "quest-failed",
+      "cont-cond": [
+        {
+          "type": "has-gold",
+          "amount": 2000
+        }
+      ]
+    },
+    "quest-failed": {
+      "lines": [
+        {
+          "from": "jake",
+          "txt": "What's this?<hpause> Have you spent my fortune?!"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "I did, I'm sorry!",
+          "lnk": "quest-failed-honest"
+        },
+        {
+          "txt": "I was jumped by a gang of scoundrels! They took it!",
+          "lnk": "quest-failed-successfully",
+          "skill-check": {
+            "check": "charisma",
+            "lnk-fail": "quest-failed-dishonest"
+          }
+        },
+        {
+          "txt": "You shouldn't have trusted me.",
+          "lnk": "quest-failed-honest"
+        }
+      ]
+    },
+    "quest-failed-dishonest": {
+      "update-characters": {
+        "jake": {
+          "image": "images/jake_angry.png"
+        }
+      },
+      "lines": [
+        {
+          "from": "jake",
+          "txt": "You lie!<hpause> +You're a swindling low-life!+"
+        },
+        {
+          "from": "jake",
+          "txt": "+A dishonest thieving bilge rat!+"
+        }
+      ],
+      "cont": "quest-failed-honest"
+    },
+    "quest-failed-honest": {
+      "update-characters": {
+        "jake": {
+          "image": "images/jake_sad.png"
+        }
+      },
+      "lines": [
+        {
+          "from": "jake",
+          "txt": "Words cannot express the weight of the +pain+ I carry in this moment."
+        },
+        {
+          "from": "jake",
+          "txt": "Please...<hpause> just leave.",
+          "scene-entry": {
+            "jake": "suicide"
+          }
+        }
+      ]
+    },
+    "quest-failed-successfully": {
+      "update-characters": {
+        "jake": {
+          "image": "images/jake_angry.png"
+        }
+      },
+      "lines": [
+        {
+          "from": "jake",
+          "txt": "+Gibbets and crows!+ Those dirty thieving ruffians!",
+          "update-characters": {
+            "jake": {
+              "image": "images/jake_sad.png"
+            }
+          }
+        },
+        {
+          "from": "jake",
+          "txt": "Words cannot express the weight of the +pain+ I carry in this moment."
+        },
+        {
+          "from": "jake",
+          "txt": "Here's some gold for your troubles, I'm afraid it's all I have.<qpause> If only they didn't steal my fortune I could have given you so much more.",
+          "reward-gold": {
+            "amount": 12
+          }
+        },
+        {
+          "from": "jake",
+          "txt": "Now please, leave me alone to writhe in my anguish.",
+          "reward-experience": {
+            "amount": 1000
+          },
+          "scene-entry": {
+            "jake": "suicide"
+          }
+        }
+      ]
+    },
+    "suicide": {
+      "lines": [
+        {
+          "from": "narrator",
+          "txt": "Jacob has killed himself and cannot answer the door.",
+          "style": "info"
+        }
+      ]
+    },
+    "quest-finished": {
+      "update-characters": {
+        "jake": {
+          "image": "images/jake_sad.png"
+        }
+      },
+      "remove-gold": {
+        "method": "give",
+        "recipient": "jake",
+        "amount": 2000
+      },
+      "lines": [
+        {
+          "from": "jake",
+          "txt": "My great fortune, finally returned to me. I weep for the years I lost waiting for this day.",
+          "update-characters": {
+            "jake": {
+              "image": "images/jake.png"
+            }
+          }
+        },
+        {
+          "from": "jake",
+          "txt": "You have served me honorably and earned by undying gratitude,<hpause> but I know that's not enough."
+        },
+        {
+          "from": "jake",
+          "txt": "Here is a reward for your honesty and swiftness.",
+          "reward-gold": {
+            "amount": 500
+          },
+          "update-characters": {
+            "jake": {
+              "image": "images/jake_happy.png"
+            }
+          }
+        },
+        {
+          "from": "jake",
+          "txt": "Now I can die a happy man. I hope life treats you as fairly as you have treated me.<hpause> Farewell.",
+          "complete-quest": "lost-treasure",
+          "scene-entry": {
+            "jake": "thanks-again"
+          }
+        }
+      ]
+    },
+    "thanks-again": {
+      "lines": [
+        {
+          "from": "jake",
+          "txt": "Thanks again, now I shall go and rest.",
+          "scene-entry": {
+            "jake": "thanks-again-2"
+          }
+        }
+      ]
+    },
+    "thanks-again-2": {
+      "update-characters": {
+        "jake": {
+          "image": "images/jake.png"
+        }
+      },
+      "lines": [
+        {
+          "from": "jake",
+          "txt": "Please, I only ask that I can remain in peace and solitude.",
+          "scene-entry": {
+            "jake": "thanks-again-3"
+          }
+        }
+      ]
+    },
+    "thanks-again-3": {
+      "update-characters": {
+        "jake": {
+          "image": "images/jake_angry.png"
+        }
+      },
+      "lines": [
+        {
+          "from": "jake",
+          "txt": "Leave me now. I shall not ask you again.",
+          "scene-entry": {
+            "jake": "thanks-again-4"
+          }
+        }
+      ]
+    },
+    "thanks-again-4": {
+      "lines": [
+        {
+          "from": "jake",
+          "txt": "Enough is enough. Goodbye.",
+          "scene-entry": {
+            "jake": "door-locked"
+          }
+        }
+      ]
+    },
+    "door-locked": {
+      "lines": [
+        {
+          "from": "narrator",
+          "txt": "The door is locked.",
+          "style": "info"
+        }
+      ]
+    },
+    "jake-dead": {
+      "lines": [
+        {
+          "from": "narrator",
+          "txt": "Jake is dead.",
+          "style": "info"
+        }
+      ]
+    }
+  }
+}

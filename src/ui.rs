@@ -20,7 +20,9 @@ pub fn dialogue_ui(
     scene_manager: &mut SceneManager,
 ) -> Option<ScenePlayerInput> {
     let mut scene_player_input = None;
-    let UiScenePart { line, responses } = scene_player.get_current(scene_manager);
+    let Some(UiScenePart { line, responses }) = scene_player.get_current(scene_manager) else {
+        return Some(ScenePlayerInput::SelectCurrent);
+    };
 
     Window::new("Dialogue")
         .collapsible(false)
@@ -61,15 +63,16 @@ pub fn dialogue_ui(
 
                 // response row
                 Frame::dark_canvas(ui.style()).show(ui, |ui| {
-                    ScrollArea::vertical().show(ui, |ui| {
-                        if let Some(responses) = responses {
+                    ScrollArea::vertical().show(ui, |ui| match responses {
+                        Some(responses) if !responses.is_empty() => {
                             responses.iter().enumerate().for_each(|(i, response)| {
                                 let selected = i == scene_player.highlighted_response();
                                 if response_button(ui, &response.text, selected) {
                                     scene_player_input = Some(ScenePlayerInput::Select(i));
                                 }
                             })
-                        } else {
+                        }
+                        _ => {
                             if response_button(ui, "<continue>", true) {
                                 scene_player_input = Some(ScenePlayerInput::SelectCurrent);
                             };

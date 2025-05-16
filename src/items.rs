@@ -1,14 +1,15 @@
 use std::path::Path;
 
-use bevy::{asset::uuid::Uuid, log::warn, platform::collections::HashMap, prelude::Resource};
+use bevy::{
+    asset::{Asset, uuid::Uuid},
+    log::{info, warn},
+    platform::collections::HashMap,
+    prelude::Resource,
+    reflect::Reflect,
+};
 use serde::Deserialize;
 
 use crate::components::ArmorSlot;
-
-#[cfg(debug_assertions)]
-const ITEM_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/items");
-#[cfg(not(debug_assertions))]
-const ITEM_PATH: &str = "assets/items";
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, derive_more::From, derive_more::Display)]
 pub struct ItemInstanceId(Uuid);
@@ -99,7 +100,7 @@ impl ItemFile {
     }
 }
 
-#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Deserialize, Reflect, Debug, Clone, PartialEq, Eq)]
 pub struct Apparel {
     id: String,
     name: String,
@@ -132,7 +133,7 @@ impl Apparel {
     }
 }
 
-#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Deserialize, Reflect, Debug, Clone, PartialEq, Eq)]
 pub struct Weapon {
     id: String,
     name: String,
@@ -163,7 +164,7 @@ impl Weapon {
     }
 }
 
-#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Deserialize, Reflect, Debug, Clone, PartialEq, Eq)]
 pub struct Food {
     id: String,
     name: String,
@@ -195,7 +196,7 @@ impl Food {
     }
 }
 
-#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Deserialize, Reflect, Debug, Clone, PartialEq, Eq)]
 pub struct Potion {
     id: String,
     name: String,
@@ -226,12 +227,12 @@ impl Potion {
     }
 }
 
-#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Deserialize, Reflect, Debug, Clone, PartialEq, Eq)]
 pub struct PotionEffects {
     health: Option<u32>,
 }
 
-#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Deserialize, Reflect, Debug, Clone, PartialEq, Eq)]
 pub struct Shield {
     id: String,
     name: String,
@@ -273,7 +274,7 @@ impl ItemId {
     }
 }
 
-#[derive(Deserialize, Debug, Clone, PartialEq, Eq, derive_more::From)]
+#[derive(Asset, Reflect, Deserialize, Debug, Clone, PartialEq, Eq, derive_more::From)]
 #[serde(untagged)]
 pub enum AnyItem {
     Apparel(Apparel),
@@ -408,7 +409,7 @@ impl ItemManager {
     }
 
     pub fn load_items<P: AsRef<Path>>(&mut self, path: P) -> anyhow::Result<()> {
-        let path = Path::new(ITEM_PATH).join(path);
+        info!("attempting to item file: {:?}", path.as_ref());
         let item_json = std::fs::read_to_string(path)?;
         let item_file: ItemFile = serde_json::from_str(&item_json)?;
         item_file.into_iter().for_each(|item| {
@@ -420,6 +421,27 @@ impl ItemManager {
 
     pub fn with_load_items<P: AsRef<Path>>(mut self, path: P) -> anyhow::Result<Self> {
         self.load_items(path)?;
+        Ok(self)
+    }
+
+    pub fn load_folder<P: AsRef<Path>>(&mut self, path: P) -> anyhow::Result<()> {
+        path.as_ref()
+            .read_dir()?
+            .into_iter()
+            .filter_map(Result::ok)
+            .filter(|entry| {
+                entry
+                    .path()
+                    .extension()
+                    .map(|ext| ext == "json")
+                    .unwrap_or(false)
+            })
+            .map(|entry| self.load_items(entry.path()))
+            .collect()
+    }
+
+    pub fn with_load_folder<P: AsRef<Path>>(mut self, path: P) -> anyhow::Result<Self> {
+        self.load_folder(path)?;
         Ok(self)
     }
 

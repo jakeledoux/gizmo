@@ -1,6 +1,5 @@
 {
-  "id": "mike",
-  "music": "harvest_dawn",
+  "id": "test",
   "characters": {
     "mike": {
       "name": "Mike",
@@ -9,29 +8,135 @@
     }
   },
   "dialogue": {
-    "intimidated": {
-      "update-characters": {
-        "mike": {
-          "image": "images/mike_scared.png"
-        }
-      },
-      "scene-entry": {
-        "mike": "locked"
-      },
+    "start": {
       "lines": [
         {
           "from": "mike",
-          "txt": "Woah!<hpause> No need to get aggressive, sir."
+          "txt": "variable test"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "set test-var: red",
+          "lnk": "set",
+          "vars": {
+            "test-var": "red"
+          }
         },
         {
-          "from": "mike",
-          "txt": "Here, please, just take this. It's all I have. Just leave me alone.",
-          "reward-gold": {
-            "amount": 50,
-            "from": "mike"
+          "txt": "set test-var: green",
+          "lnk": "set",
+          "vars": {
+            "test-var": "green"
           }
+        },
+        {
+          "txt": "set test-var: blue",
+          "lnk": "set",
+          "vars": {
+            "test-var": "blue"
+          }
+        },
+        {
+          "txt": "I am red!",
+          "lnk": "affirmation",
+          "cond": [
+            {
+              "type": "var-equals",
+              "var": "test-var",
+              "value": "red"
+            }
+          ]
+        },
+        {
+          "txt": "I am green!",
+          "lnk": "affirmation",
+          "cond": [
+            {
+              "type": "var-equals",
+              "var": "test-var",
+              "value": "green"
+            }
+          ]
+        },
+        {
+          "txt": "I am blue!",
+          "lnk": "affirmation",
+          "cond": [
+            {
+              "type": "var-equals",
+              "var": "test-var",
+              "value": "blue"
+            }
+          ]
+        },
+        {
+          "txt": "I am not red!",
+          "lnk": "affirmation",
+          "cond": [
+            {
+              "type": "not",
+              "cond": [
+                {
+                  "type": "var-equals",
+                  "var": "test-var",
+                  "value": "red"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "txt": "I am not green!",
+          "lnk": "affirmation",
+          "cond": [
+            {
+              "type": "not",
+              "cond": [
+                {
+                  "type": "var-equals",
+                  "var": "test-var",
+                  "value": "green"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "txt": "I am not blue!",
+          "lnk": "affirmation",
+          "cond": [
+            {
+              "type": "not",
+              "cond": [
+                {
+                  "type": "var-equals",
+                  "var": "test-var",
+                  "value": "blue"
+                }
+              ]
+            }
+          ]
         }
       ]
+    },
+    "set": {
+      "lines": [
+        {
+          "from": "mike",
+          "text": "variable set."
+        }
+      ],
+      "cont": "start"
+    },
+    "affirmation": {
+      "lines": [
+        {
+          "from": "mike",
+          "text": "indeed, that is correct."
+        }
+      ],
+      "cont": "start"
     }
   }
 }

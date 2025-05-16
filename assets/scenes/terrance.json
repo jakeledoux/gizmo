@@ -1,0 +1,155 @@
+{
+  "id": "terrance",
+  "vendors": {
+    "terrance": {
+      "name": "Tough Guy Terrance",
+      "daily-gold": 12,
+      "preset-inventory": [
+        "nalaxone",
+        "heroin",
+        "heroin",
+        "heroin",
+        "meth",
+        "meth",
+        "cocaine"
+      ]
+    }
+  },
+  "characters": {
+    "terrance": {
+      "name": "Tough Guy Terrance",
+      "level": 10,
+      "image": "images/nate.png",
+      "voice": "mike"
+    }
+  },
+  "dialogue": {
+    "start": {
+      "lines": [
+        {
+          "from": "terrance",
+          "txt": "Haven't seen a dragon all day."
+        }
+      ],
+      "resp": [
+        {
+          "txt": "Me neither.",
+          "lnk": "get-lost"
+        },
+        {
+          "txt": "Dragons don't exist, dumbass.",
+          "lnk": "get-lost"
+        },
+        {
+          "txt": "Have you tried looking up?",
+          "lnk": "accepted",
+          "cond": [
+            {
+              "type": "quest-stage",
+              "quest": "itsa-me",
+              "stage": 1
+            }
+          ]
+        }
+      ]
+    },
+    "get-lost": {
+      "lines": [
+        {
+          "from": "terrance",
+          "txt": "Get lost."
+        }
+      ]
+    },
+    "accepted": {
+      "scene-entry": {
+        "terrance": "trust-greeting"
+      },
+      "lines": [
+        {
+          "from": "terrance",
+          "txt": "My man."
+        }
+      ],
+      "cont": "trust-greeting"
+    },
+    "trust-greeting": {
+      "lines": [
+        {
+          "from": "terrance",
+          "txt": "What can I do for you?"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "I'd like to make a purchase.",
+          "lnk": "purchase"
+        },
+        {
+          "txt": "Just came to say hi to my favorite dealer.",
+          "lnk": "say-hi"
+        },
+        {
+          "txt": "Nothing at the moment.",
+          "lnk": "nothing"
+        }
+      ]
+    },
+    "say-hi": {
+      "lines": [
+        {
+          "from": "terrance",
+          "txt": "Not many people are nice to Terry."
+        },
+        {
+          "from": "terrance",
+          "txt": "You make Terry feel happy inside."
+        }
+      ]
+    },
+    "nothing": {
+      "lines": [
+        {
+          "from": "terrance",
+          "txt": "Alright then."
+        }
+      ]
+    },
+    "purchase": {
+      "lines": [
+        {
+          "from": "terrance",
+          "txt": "Certainly. Take a look.",
+          "start-trade": "terrance"
+        }
+      ],
+      "cont": "post-purchase"
+    },
+    "post-purchase": {
+      "lines": [
+        {
+          "from": "terrance",
+          "txt": "Thanks for stopping by."
+        }
+      ],
+      "cont-if": "bought-heroin",
+      "cont-cond": [
+        {
+          "type": "quest-stage",
+          "quest": "itsa-me",
+          "stage": 1
+        },
+        {
+          "type": "has-item",
+          "item": "heroin"
+        }
+      ]
+    },
+    "bought-heroin": {
+      "set-quest-stage": {
+        "quest": "itsa-me",
+        "stage": 2
+      }
+    }
+  }
+}

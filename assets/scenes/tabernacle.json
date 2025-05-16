@@ -1,0 +1,149 @@
+{
+  "id": "tabernacle",
+  "music": "harvest_dawn",
+  "characters": {
+    "tabernacle": {
+      "name": "Old Lady Tabernacle",
+      "level": 1,
+      "stats": {
+        "endurance": 1
+      },
+      "image": "images/tabernacle.png",
+      "voice": "tabernacle"
+    },
+    "young-tabernacle": {
+      "name": "Little Jimmie",
+      "level": 0,
+      "stats": {
+        "endurance": 1
+      },
+      "voice": "jimmie"
+    }
+  },
+  "dialogue": {
+    "start": {
+      "lines": [
+        {
+          "from": "tabernacle",
+          "txt": "What the hell is all the racket out there?"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "Mrs. Tabernacle, it's me, %$NAME%. Could I please come inside?",
+          "lnk": "inside"
+        },
+        {
+          "txt": "Shut up, old wretch.",
+          "lnk": "shut-up"
+        },
+        {
+          "txt": "It's the grim reaper, your time has come.",
+          "lnk": "go-away"
+        }
+      ]
+    },
+    "inside": {
+      "lines": [
+        {
+          "from": "tabernacle",
+          "txt": "What? Who?"
+        }
+      ],
+      "cont": "go-away"
+    },
+    "shut-up": {
+      "update-characters": {
+        "tabernacle": {
+          "image": "images/tabernacle_angry.png"
+        }
+      },
+      "lines": [
+        {
+          "from": "tabernacle",
+          "txt": "+WHAAAAAAAAAAAAAT???????+"
+        },
+        {
+          "from": "tabernacle",
+          "txt": "How dare you speak to me that way?! I shall have you reported!"
+        },
+        {
+          "from": "tabernacle",
+          "txt": "...and hanged!",
+          "battle": "tabernacle"
+        }
+      ],
+      "cont": "young-tab"
+    },
+    "young-tab": {
+      "lines": [
+        {
+          "from": "young-tabernacle",
+          "txt": "Granny!"
+        },
+        {
+          "from": "narrator",
+          "txt": "%Little Jimmie Tabernacle% kneels over his grandmother's lifeless corpse and weeps.",
+          "style": "info"
+        },
+        {
+          "from": "young-tabernacle",
+          "txt": "You killed her!"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "Yeah bitch, and I'll kill you too.",
+          "lnk": "kill-timmie",
+          "battle": "young-tabernacle"
+        },
+        {
+          "txt": "[Leave]",
+          "scene-entry": {
+            "tabernacle": "murderer"
+          }
+        }
+      ]
+    },
+    "kill-timmie": {
+      "scene-entry": {
+        "tabernacle": "nobody-left"
+      },
+      "lines": [
+        {
+          "from": "",
+          "txt": "You are a terrible person.",
+          "style": "info"
+        }
+      ]
+    },
+    "nobody-left": {
+      "lines": [
+        {
+          "from": "",
+          "txt": "There is no-one left to answer the door.",
+          "style": "info"
+        }
+      ]
+    },
+    "murderer": {
+      "lines": [
+        {
+          "from": "young-tabernacle",
+          "txt": "Murderer! Leave me alone!"
+        }
+      ]
+    },
+    "go-away": {
+      "scene-entry": {
+        "tabernacle": "go-away"
+      },
+      "lines": [
+        {
+          "from": "tabernacle",
+          "txt": "Go away! And don't come back!"
+        }
+      ]
+    }
+  }
+}

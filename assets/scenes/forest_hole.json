@@ -1,0 +1,86 @@
+{
+  "id": "forest_hole",
+  "dialogue": {
+    "start": {
+      "lines": [
+        {
+          "from": "You",
+          "txt": "Someone seems to have buried something here."
+        },
+        {
+          "from": "You",
+          "txt": "What should I do?"
+        }
+      ],
+      "resp": [
+        {
+          "txt": "Cover it up",
+          "lnk": "cover"
+        },
+        {
+          "txt": "Dig for treasure",
+          "lnk": "dig"
+        },
+        {
+          "txt": "Leave it alone"
+        }
+      ]
+    },
+    "cover": {
+      "scene-entry": {
+        "forest_hole": "post-cover"
+      },
+      "lines": [
+        {
+          "from": "narrator",
+          "txt": "You fill the hole with dirt and cover it with some leaves.",
+          "style": "info",
+          "fail-quest": "lost-treasure"
+        }
+      ]
+    },
+    "post-cover": {
+      "lines": [
+        {
+          "from": "narrator",
+          "txt": "The hole is now filled up.",
+          "style": "info"
+        }
+      ]
+    },
+    "dig": {
+      "scene-entry": {
+        "forest_hole": "post-dig"
+      },
+      "lines": [
+        {
+          "from": "narrator",
+          "txt": "You dig into the hole looking for treasure...",
+          "style": "info"
+        },
+        {
+          "from": "narrator",
+          "txt": "After a few seconds you hear the clinking of metal.",
+          "style": "info",
+          "reward-gold": {
+            "method": "found",
+            "amount": 2000
+          },
+          "set-quest-stage": {
+            "quest": "lost-treasure",
+            "stage": 1
+          }
+        }
+      ]
+    },
+    "post-dig": {
+      "lines": [
+        {
+          "from": "narrator",
+          "txt": "The hole is now empty.",
+          "style": "info"
+        }
+      ]
+    }
+  }
+}

@@ -5,7 +5,7 @@ use std::{
 
 use bevy::{
     asset::uuid::Uuid,
-    log::warn,
+    log::{debug, error, info, warn},
     platform::collections::HashMap,
     prelude::{EventWriter, Resource},
 };
@@ -13,10 +13,7 @@ use serde::Deserialize;
 
 use crate::{EndSceneEvent, components::ArmorSlot};
 
-#[cfg(debug_assertions)]
-const SCENE_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/scenes");
-#[cfg(not(debug_assertions))]
-const SCENE_PATH: &str = "assets/scenes";
+type TODO = serde_json::Value;
 
 #[derive(
     Deserialize, Debug, Hash, Clone, PartialEq, Eq, derive_more::From, derive_more::Display,
@@ -43,21 +40,35 @@ impl SceneId {
 #[serde(deny_unknown_fields)]
 pub struct Scene {
     id: SceneId,
-    music: String,
-    characters: HashMap<CharacterId, Character>,
+    music: Option<String>,
+    characters: Option<HashMap<CharacterId, Character>>,
+    vendors: Option<TODO>,
+    quests: Option<TODO>,
     dialogue: HashMap<SceneSectionId, Dialogue>,
+    #[serde(flatten)]
+    commands: Option<SceneCommands>,
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
 pub struct Character {
     name: String,
+    #[serde(default)]
     image: PathBuf,
+    #[serde(default)]
     voice: String,
 }
 
+impl Default for Character {
+    fn default() -> Self {
+        Self {
+            name: "?".to_string(),
+            image: PathBuf::from("images/unknown.png"),
+            voice: "default".to_string(),
+        }
+    }
+}
+
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
 pub struct CharacterUpdate {
     name: Option<String>,
     image: Option<PathBuf>,
@@ -67,9 +78,10 @@ pub struct CharacterUpdate {
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub struct Dialogue {
+    #[serde(default)]
     lines: Vec<Line>,
-    #[serde(alias = "resp")]
-    responses: Option<Vec<Response>>,
+    #[serde(alias = "resp", default)]
+    responses: Vec<Response>,
     #[serde(flatten)]
     commands: Option<SceneCommands>,
     #[serde(alias = "cont")]
@@ -92,8 +104,18 @@ pub struct Response {
     #[serde(alias = "txt")]
     pub text: String,
     #[serde(alias = "lnk")]
-    link: SceneSectionId,
+    link: Option<SceneSectionId>,
     skill_check: Option<SkillCheck>,
+    // TODO:
+    #[serde(alias = "cond", default)]
+    conditions: Vec<Condition>,
+    #[serde(flatten)]
+    commands: Option<SceneCommands>,
+}
+impl Response {
+    fn evaluate_conditions(&self, scene_manager: &SceneManager) -> bool {
+        self.conditions.iter().all(|c| c.evaluate(scene_manager))
+    }
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -120,6 +142,41 @@ pub enum Skill {
     Luck,
 }
 
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case", tag = "type")]
+pub enum Condition {
+    VarEquals {
+        #[serde(alias = "var")]
+        variable: String,
+        value: String,
+    },
+    Any {
+        #[serde(alias = "cond")]
+        conditions: Vec<Condition>,
+    },
+    Not {
+        #[serde(alias = "cond")]
+        conditions: Vec<Condition>,
+    },
+    // TODO
+    HasItem,
+    QuestStage,
+}
+impl Condition {
+    fn evaluate(&self, scene_manager: &SceneManager) -> bool {
+        match self {
+            Condition::VarEquals { variable, value } => scene_manager
+                .get_variable(variable)
+                .map(|v| v == value)
+                .unwrap_or(false),
+            Condition::Any { conditions } => conditions.iter().any(|c| c.evaluate(scene_manager)),
+            Condition::Not { conditions } => conditions.iter().all(|c| !c.evaluate(scene_manager)),
+            Condition::HasItem => todo!(),
+            Condition::QuestStage => todo!(),
+        }
+    }
+}
+
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq, derive_more::From)]
 #[serde(rename_all = "kebab-case")]
 #[serde(deny_unknown_fields)]
@@ -127,6 +184,28 @@ pub struct SceneCommands {
     reward_gold: Option<RewardGoldCommand>,
     update_characters: Option<HashMap<CharacterId, CharacterUpdate>>,
     scene_entry: Option<HashMap<String, String>>,
+    #[serde(alias = "vars")]
+    variables: Option<HashMap<String, String>>,
+    battle: Option<TODO>,
+    kill_character: Option<TODO>,
+    set_quest_stage: Option<TODO>,
+    complete_quest: Option<TODO>,
+}
+
+impl SceneCommands {
+    pub fn execute(self, scene_manager: &mut SceneManager) {
+        // TODO: reward_gold
+        // TODO: update_characters
+        // TODO: scene_entry
+        if let Some(variables) = self.variables {
+            info!("updating variables: {variables:?}");
+            scene_manager.update_variables(variables.into_iter());
+        }
+        // TODO: battle
+        // TODO: kill_character
+        // TODO: set_quest_stage
+        // TODO: complete_quest
+    }
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq, derive_more::From)]
@@ -188,15 +267,28 @@ impl ScenePlayer {
         self.reset_line()
     }
 
-    fn select(&mut self, dialogue: &Dialogue, end_scene_event: &mut EventWriter<EndSceneEvent>) {
+    fn select(
+        &mut self,
+        dialogue: &Dialogue,
+        scene_manager: &mut SceneManager,
+        end_scene_event: &mut EventWriter<EndSceneEvent>,
+    ) {
+        if dialogue.lines.is_empty() {
+            end_scene_event.write(EndSceneEvent);
+        }
         // execute response
-        if let Some(response) = dialogue
-            .responses
-            .as_ref()
-            .map(|responses| &responses[self.highlighted_response])
-        {
-            // TODO: commands, skill check, etc.
-            self.set_key(response.link.clone());
+        if let Some(response) = dialogue.responses.get(self.highlighted_response) {
+            if let Some(commands) = response.commands.clone() {
+                // TODO: remove clone
+                commands.clone().execute(scene_manager);
+            }
+
+            // TODO: skill check, etc.
+            if let Some(link) = response.link.as_ref() {
+                self.set_key(link.to_owned());
+            } else {
+                end_scene_event.write(EndSceneEvent);
+            }
         }
         // continue
         else {
@@ -212,43 +304,55 @@ impl ScenePlayer {
         }
     }
 
-    pub fn get_current<'a>(&'a self, scene_manager: &'a SceneManager) -> UiScenePart<'a> {
+    pub fn get_current<'a>(&'a self, scene_manager: &'a SceneManager) -> Option<UiScenePart<'a>> {
         let dialogue = self.get_dialogue(scene_manager);
+        // some dialogues exist only to run commands and exit
+        if dialogue.lines.is_empty() {
+            return None;
+        }
         let line = &dialogue.lines[self.current_line];
-        let responses = if dialogue.lines.len() - 1 == self.current_line {
-            dialogue.responses.as_ref()
-        } else {
-            None
+
+        // get responses if necessary
+        let responses = {
+            if dialogue.lines.len() - 1 > self.current_line {
+                None
+            } else {
+                Some(
+                    dialogue
+                        .responses
+                        .iter()
+                        .filter(|resp| resp.evaluate_conditions(scene_manager))
+                        .collect(),
+                )
+            }
         };
-        UiScenePart { line, responses }
+        Some(UiScenePart { line, responses })
     }
 
     pub fn input(
         &mut self,
         input: ScenePlayerInput,
-        scene_manager: &SceneManager,
+        scene_manager: &mut SceneManager,
         end_scene_event: &mut EventWriter<EndSceneEvent>,
     ) {
-        let dialogue = self.get_dialogue(scene_manager);
+        // TODO: remove clone
+        let dialogue = self.get_dialogue(scene_manager).clone();
         match input {
             ScenePlayerInput::MoveUp => {
                 self.highlighted_response = self.highlighted_response.saturating_sub(1);
             }
             ScenePlayerInput::MoveDown => {
-                self.highlighted_response = self.highlighted_response.add(1).min(
-                    dialogue
-                        .responses
-                        .as_ref()
-                        .map(|responses| responses.len() - 1)
-                        .unwrap_or(0),
-                );
+                self.highlighted_response = self
+                    .highlighted_response
+                    .add(1)
+                    .min(dialogue.responses.len().saturating_sub(1));
             }
             ScenePlayerInput::Select(i) => {
                 self.highlighted_response = i;
-                self.select(dialogue, end_scene_event);
+                self.select(&dialogue, scene_manager, end_scene_event);
             }
             ScenePlayerInput::Select(_) | ScenePlayerInput::SelectCurrent => {
-                self.select(dialogue, end_scene_event);
+                self.select(&dialogue, scene_manager, end_scene_event);
             }
         }
     }
@@ -268,12 +372,13 @@ pub enum ScenePlayerInput {
 
 pub struct UiScenePart<'a> {
     pub line: &'a Line,
-    pub responses: Option<&'a Vec<Response>>,
+    pub responses: Option<Vec<&'a Response>>,
 }
 
 #[derive(Resource, Debug, Clone, Default)]
 pub struct SceneManager {
     scenes: HashMap<SceneId, Scene>,
+    variables: HashMap<String, String>,
 }
 
 impl SceneManager {
@@ -282,7 +387,7 @@ impl SceneManager {
     }
 
     pub fn load_scene<P: AsRef<Path>>(&mut self, path: P) -> anyhow::Result<()> {
-        let path = Path::new(SCENE_PATH).join(path);
+        info!("attempting to item file: {:?}", path.as_ref());
         let scene_json = std::fs::read_to_string(path)?;
         let scene: Scene = serde_json::from_str(&scene_json)?;
         self.scenes.insert(scene.id.clone(), scene);
@@ -294,9 +399,45 @@ impl SceneManager {
         Ok(self)
     }
 
+    pub fn load_folder<P: AsRef<Path>>(&mut self, path: P) -> anyhow::Result<()> {
+        path.as_ref()
+            .read_dir()?
+            .into_iter()
+            .filter_map(Result::ok)
+            .filter(|entry| {
+                entry
+                    .path()
+                    .extension()
+                    .map(|ext| ext == "json")
+                    .unwrap_or(false)
+            })
+            .for_each(|entry| {
+                if let Err(e) = self.load_scene(entry.path()) {
+                    error!("failed to load scene: {e}");
+                }
+            });
+        Ok(())
+    }
+
+    pub fn with_load_folder<P: AsRef<Path>>(mut self, path: P) -> anyhow::Result<Self> {
+        self.load_folder(path)?;
+        Ok(self)
+    }
+
     pub fn play_scene(&self, scene: SceneId) -> Option<ScenePlayer> {
         self.scenes
             .contains_key(&scene)
             .then(|| ScenePlayer::new(scene))
+    }
+
+    fn update_variables<U>(&mut self, variables: U)
+    where
+        U: IntoIterator<Item = (String, String)>,
+    {
+        self.variables.extend(variables)
+    }
+
+    fn get_variable(&self, variable: &str) -> Option<&String> {
+        self.variables.get(variable)
     }
 }
