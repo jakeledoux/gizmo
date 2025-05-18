@@ -13,6 +13,7 @@ use serde::Deserialize;
 
 use crate::{EndSceneEvent, SceneCommandsEvent};
 
+#[allow(clippy::upper_case_acronyms)]
 type TODO = serde_json::Value;
 
 #[derive(
@@ -229,7 +230,7 @@ impl SceneCommands {
         }
         if let Some(variables) = self.variables {
             info!("updating variables: {variables:?}");
-            scene_manager.update_variables(variables.into_iter());
+            scene_manager.update_variables(variables);
         }
         // TODO: battle
         // TODO: kill_character
@@ -355,16 +356,12 @@ impl ScenePlayer {
             }
         }
         // continue
-        else {
-            if dialogue.lines.len() - 1 > self.current_line {
-                self.advance_line();
-            } else {
-                if let Some(ref section) = dialogue.continue_to {
-                    self.set_key(section.to_owned())
-                } else {
-                    end_scene_event.write(EndSceneEvent);
-                }
-            }
+        else if dialogue.lines.len() - 1 > self.current_line {
+            self.advance_line();
+        } else if let Some(ref section) = dialogue.continue_to {
+            self.set_key(section.to_owned())
+        } else {
+            end_scene_event.write(EndSceneEvent);
         }
     }
 
@@ -485,7 +482,6 @@ impl SceneManager {
     pub fn load_folder<P: AsRef<Path>>(&mut self, path: P) -> anyhow::Result<()> {
         path.as_ref()
             .read_dir()?
-            .into_iter()
             .filter_map(Result::ok)
             .filter(|entry| {
                 entry

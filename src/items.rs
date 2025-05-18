@@ -14,6 +14,12 @@ use crate::components::ArmorSlot;
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, derive_more::From, derive_more::Display)]
 pub struct ItemInstanceId(Uuid);
 
+impl Default for ItemInstanceId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ItemInstanceId {
     pub fn new() -> Self {
         Self(Uuid::new_v4())
@@ -427,7 +433,6 @@ impl ItemManager {
     pub fn load_folder<P: AsRef<Path>>(&mut self, path: P) -> anyhow::Result<()> {
         path.as_ref()
             .read_dir()?
-            .into_iter()
             .filter_map(Result::ok)
             .filter(|entry| {
                 entry
@@ -435,9 +440,7 @@ impl ItemManager {
                     .extension()
                     .map(|ext| ext == "json")
                     .unwrap_or(false)
-            })
-            .map(|entry| self.load_items(entry.path()))
-            .collect()
+            }).try_for_each(|entry| self.load_items(entry.path()))
     }
 
     pub fn with_load_folder<P: AsRef<Path>>(mut self, path: P) -> anyhow::Result<Self> {

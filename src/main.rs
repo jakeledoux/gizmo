@@ -131,6 +131,7 @@ fn debug_quit_immediately(mut exit_event: EventWriter<AppExit>) {
     exit_event.write(AppExit::Success);
 }
 
+#[allow(clippy::too_many_arguments)]
 fn ui_system(
     contexts: EguiContexts,
     game_state: Res<State<GameState>>,
