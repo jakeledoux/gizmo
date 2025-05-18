@@ -108,31 +108,6 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn setup(
-    mut commands: Commands,
-    mut item_manager: ResMut<ItemManager>,
-    mut scene_manager: ResMut<SceneManager>,
-    mut state_manager: ResMut<StateManager>,
-) {
-    commands.spawn(Camera2d);
-    // value for text input for selecting scenes
-    commands.insert_resource(DebugPlaySceneId::default());
-    // start game in map mode
-    state_manager.push(&mut commands, GameState::Map);
-
-    // load assets
-    if let Err(e) = item_manager.load_folder(Path::new(ASSETS_PATH).join("items")) {
-        warn!("could not load items: {e}")
-    };
-    if let Err(e) = scene_manager.load_folder(Path::new(ASSETS_PATH).join("scenes")) {
-        warn!("could not load scene: {e}")
-    };
-
-    // spawn player
-    // TODO: spawn with inventory in debug mode
-    commands.spawn((Player, RpgEntity::new(Some("Jake".to_string()))));
-}
-
 fn register_events(app: &mut App) {
     app.add_event::<AttackEvent>()
         .add_event::<DamageEvent>()
@@ -163,6 +138,30 @@ fn register_events(app: &mut App) {
         );
 }
 
+fn setup(
+    mut commands: Commands,
+    mut item_manager: ResMut<ItemManager>,
+    mut scene_manager: ResMut<SceneManager>,
+    mut state_manager: ResMut<StateManager>,
+) {
+    commands.spawn(Camera2d);
+    // value for text input for selecting scenes
+    commands.insert_resource(DebugPlaySceneId::default());
+    // start game in map mode
+    state_manager.push(&mut commands, GameState::Map);
+
+    // load assets
+    if let Err(e) = item_manager.load_folder(Path::new(ASSETS_PATH).join("items")) {
+        warn!("could not load items: {e}")
+    };
+    if let Err(e) = scene_manager.load_folder(Path::new(ASSETS_PATH).join("scenes")) {
+        warn!("could not load scene: {e}")
+    };
+
+    // spawn player
+    utils::spawn_player(&mut commands, &item_manager, "Jake", &["dragonbone-sword"]);
+}
+
 #[derive(Resource, Default)]
 struct DebugPlaySceneId(String);
 
@@ -184,8 +183,9 @@ fn ui_system(
     mut attack_event: EventWriter<AttackEvent>,
     mut end_battle_event: EventWriter<EndBattleEvent>,
     mut debug_new_scene_id: ResMut<DebugPlaySceneId>,
+    debug_player_query: Query<&RpgEntity, With<Player>>,
     npc_query: Query<(&Npc, &RpgEntity)>,
-    player_query: Query<Entity, With<Player>>,
+    battle_player_query: Query<Entity, With<Player>>,
     battle: Option<Res<Battle>>,
 ) {
     let play_scene_event = &mut play_scene_event;
@@ -193,7 +193,13 @@ fn ui_system(
     let scene_command_event = &mut scene_command_event;
 
     if DEBUG {
-        debug_ui(contexts.ctx_mut(), npc_query, &scene_manager, &item_manager);
+        debug_ui(
+            contexts.ctx_mut(),
+            debug_player_query,
+            npc_query,
+            &scene_manager,
+            &item_manager,
+        );
     }
 
     match **game_state {
@@ -257,7 +263,7 @@ fn ui_system(
         GameState::Battle => {
             battle_ui(
                 contexts.ctx_mut(),
-                &player_query,
+                &battle_player_query,
                 &npc_query,
                 &battle.expect("gamestate is battle but there's no battle!"),
                 &mut attack_event,

@@ -1,8 +1,8 @@
 use bevy::prelude::{Commands, Query};
 
 use crate::{
-    AnyItem, Apparel, Character, Food, Inventory, ItemInstanceId, ItemManager, Npc, NpcId, Potion,
-    RpgEntity, Shield, Weapon,
+    AnyItem, Apparel, Character, Food, Inventory, ItemInstanceId, ItemManager, Npc, NpcId, Player,
+    Potion, RpgEntity, Shield, Weapon,
 };
 
 pub fn get_item<'a>(
@@ -73,4 +73,20 @@ pub fn spawn_npc(
         RpgEntity::new(Some(character.name)),
     ));
     true
+}
+
+pub fn spawn_player(
+    commands: &mut Commands,
+    item_manager: &ItemManager,
+    name: &str,
+    items: &[&'static str],
+) {
+    let mut player = RpgEntity::new(Some(name.to_string()));
+    for item_id in items {
+        if let Some(item) = item_manager.spawn(item_id.to_string().into()) {
+            let instance_id = player.inventory.insert(item);
+            player.equip(instance_id);
+        }
+    }
+    commands.spawn((Player, player));
 }

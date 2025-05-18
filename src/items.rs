@@ -34,19 +34,6 @@ pub struct ItemInstance {
 }
 
 impl ItemInstance {
-    pub fn spawn(item_id: ItemId, item_manager: &ItemManager) -> Option<Self> {
-        let Some(item) = item_manager.get_item(&item_id) else {
-            warn!("no item with ID: {item_id:?}");
-            return None;
-        };
-
-        Some(Self {
-            instance_id: ItemInstanceId::new(),
-            item_id,
-            kind: item.kind(),
-        })
-    }
-
     pub fn instance_id(&self) -> ItemInstanceId {
         self.instance_id
     }
@@ -451,6 +438,19 @@ impl ItemManager {
 
     pub fn get_item(&self, id: &ItemId) -> Option<&AnyItem> {
         self.items.get(id)
+    }
+
+    pub fn spawn(&self, item_id: ItemId) -> Option<ItemInstance> {
+        let Some(item) = self.get_item(&item_id) else {
+            warn!("no item with ID: {item_id:?}");
+            return None;
+        };
+
+        Some(ItemInstance {
+            instance_id: ItemInstanceId::new(),
+            item_id,
+            kind: item.kind(),
+        })
     }
 }
 

@@ -17,7 +17,6 @@ pub enum ArmorSlot {
     Body,
     Feet,
     Hands,
-    Shield,
 }
 
 #[derive(Default, Debug, Hash, PartialEq, Eq)]
@@ -26,7 +25,6 @@ pub struct ArmorSlots {
     body: Option<ItemInstanceId>,
     feet: Option<ItemInstanceId>,
     hands: Option<ItemInstanceId>,
-    shield: Option<ItemInstanceId>,
 }
 
 impl ArmorSlots {
@@ -36,7 +34,6 @@ impl ArmorSlots {
             ArmorSlot::Body => &mut self.body,
             ArmorSlot::Feet => &mut self.feet,
             ArmorSlot::Hands => &mut self.hands,
-            ArmorSlot::Shield => &mut self.shield,
         }
     }
 
@@ -46,7 +43,6 @@ impl ArmorSlots {
             ArmorSlot::Body => self.body.as_ref(),
             ArmorSlot::Feet => self.feet.as_ref(),
             ArmorSlot::Hands => self.hands.as_ref(),
-            ArmorSlot::Shield => self.shield.as_ref(),
         }
     }
 
@@ -190,6 +186,21 @@ impl RpgEntity {
     pub fn is_dead(&self) -> bool {
         !self.is_alive()
     }
+
+    pub fn equipped(&self) -> impl Iterator<Item = &ItemInstanceId> {
+        self.weapon
+            .iter()
+            .chain(self.shield.iter())
+            .chain(self.armor.head.iter())
+            .chain(self.armor.body.iter())
+            .chain(self.armor.hands.iter())
+            .chain(self.armor.feet.iter())
+    }
+
+    pub fn is_equipped(&self, instance_id: &ItemInstanceId) -> bool {
+        self.equipped()
+            .any(|equipped_instance_id| equipped_instance_id == instance_id)
+    }
 }
 
 impl std::fmt::Display for RpgEntity {
@@ -200,7 +211,7 @@ impl std::fmt::Display for RpgEntity {
 
 #[derive(Component, Default, Debug)]
 pub struct Inventory {
-    items: HashMap<ItemInstanceId, ItemInstance>,
+    pub(crate) items: HashMap<ItemInstanceId, ItemInstance>,
 }
 
 impl Inventory {

@@ -173,14 +173,20 @@ pub fn battle_ui(
 
 pub fn debug_ui(
     ctx: &mut Context,
-    // TODO
-    // player_query: Query<&RpgEntity, With<Player>>,
+    player_query: Query<&RpgEntity, With<Player>>,
     entity_query: Query<(&Npc, &RpgEntity)>,
     scene_manager: &SceneManager,
     item_manager: &ItemManager,
 ) {
+    let player = player_query.single().expect("player must exist.");
+
     Window::new("Debug Panel").show(ctx, |ui| {
         ScrollArea::vertical().show(ui, |ui| {
+            CollapsingHeader::new("Player")
+                .default_open(true)
+                .show(ui, |ui| {
+                    player.show(ui);
+                });
             CollapsingHeader::new("NPCs")
                 .default_open(true)
                 .show(ui, |ui| {
@@ -192,8 +198,7 @@ pub fn debug_ui(
                             npc.id,
                         ))
                         .show(ui, |ui| {
-                            ui.label(format!("damage: {}", rpg_entity.damage()));
-                            ui.label(format!("max health: {}", rpg_entity.max_health()));
+                            rpg_entity.show(ui);
                         });
                     })
                 });
@@ -233,4 +238,28 @@ pub fn debug_ui(
                 })
         })
     });
+}
+
+trait DebugUi {
+    fn show(&self, ui: &mut Ui);
+}
+
+impl DebugUi for RpgEntity {
+    fn show(&self, ui: &mut Ui) {
+        ui.label(format!("name: {}", self.name()));
+        ui.label(format!("hp: {}/{}", self.health(), self.max_health()));
+        CollapsingHeader::new("Inventory").show(ui, |ui| {
+            for item_instance in self.inventory.items.values() {
+                ui.label(format!(
+                    "{}{}",
+                    if self.is_equipped(&item_instance.instance_id()) {
+                        "[X] "
+                    } else {
+                        ""
+                    },
+                    item_instance.item_id()
+                ));
+            }
+        });
+    }
 }
