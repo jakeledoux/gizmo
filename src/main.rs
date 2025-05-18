@@ -58,6 +58,7 @@ fn main() -> anyhow::Result<()> {
         .add_event::<DeathEvent>()
         .add_event::<PlaySceneEvent>()
         .add_event::<EndSceneEvent>()
+        .add_event::<SceneCommandsEvent>()
         .configure_sets(
             Update,
             (
@@ -81,6 +82,7 @@ fn main() -> anyhow::Result<()> {
                 // meta events
                 PlaySceneEvent::handler,
                 EndSceneEvent::handler,
+                SceneCommandsEvent::handler.before(EndSceneEvent::handler),
             ),
         )
         // rendering
@@ -139,19 +141,34 @@ fn ui_system(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut play_scene_event: EventWriter<PlaySceneEvent>,
     mut end_scene_event: EventWriter<EndSceneEvent>,
+    mut scene_command_event: EventWriter<SceneCommandsEvent>,
     mut debug_new_scene_id: ResMut<DebugPlaySceneId>,
 ) {
+    let play_scene_event = &mut play_scene_event;
+    let end_scene_event = &mut end_scene_event;
+    let scene_command_event = &mut scene_command_event;
+
     match **game_state {
         GameState::Map => {
-            map_ui(contexts, &mut play_scene_event, &mut debug_new_scene_id.0);
+            map_ui(contexts, play_scene_event, &mut debug_new_scene_id.0);
         }
         GameState::Dialogue => {
             let Some(ref mut scene_player) = scene_player else {
                 return;
             };
 
-            if let Some(input) = dialogue_ui(contexts, scene_player, &mut scene_manager) {
-                scene_player.input(input, &mut scene_manager, &mut end_scene_event)
+            if let Some(input) = dialogue_ui(
+                contexts,
+                scene_player,
+                &mut scene_manager,
+                scene_command_event,
+            ) {
+                scene_player.input(
+                    input,
+                    &mut scene_manager,
+                    end_scene_event,
+                    scene_command_event,
+                )
             }
 
             if keyboard_input.just_pressed(KeyCode::KeyW)
@@ -160,7 +177,8 @@ fn ui_system(
                 scene_player.input(
                     ScenePlayerInput::MoveUp,
                     &mut scene_manager,
-                    &mut end_scene_event,
+                    end_scene_event,
+                    scene_command_event,
                 )
             }
             if keyboard_input.just_pressed(KeyCode::KeyS)
@@ -169,7 +187,8 @@ fn ui_system(
                 scene_player.input(
                     ScenePlayerInput::MoveDown,
                     &mut scene_manager,
-                    &mut end_scene_event,
+                    end_scene_event,
+                    scene_command_event,
                 )
             }
             if keyboard_input.just_pressed(KeyCode::KeyE)
@@ -178,7 +197,8 @@ fn ui_system(
                 scene_player.input(
                     ScenePlayerInput::SelectCurrent,
                     &mut scene_manager,
-                    &mut end_scene_event,
+                    end_scene_event,
+                    scene_command_event,
                 )
             }
         }

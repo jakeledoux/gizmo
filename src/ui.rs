@@ -11,16 +11,20 @@ use bevy_egui::{
 };
 
 use crate::{
-    EndSceneEvent, PlaySceneEvent, SceneManager, ScenePlayer, ScenePlayerInput, UiScenePart,
+    EndSceneEvent, PlaySceneEvent, SceneCommandsEvent, SceneManager, ScenePlayer, ScenePlayerInput,
+    UiScenePart,
 };
 
 pub fn dialogue_ui(
     mut contexts: EguiContexts,
     scene_player: &mut ScenePlayer,
     scene_manager: &mut SceneManager,
+    scene_commands_events: &mut EventWriter<SceneCommandsEvent>,
 ) -> Option<ScenePlayerInput> {
     let mut scene_player_input = None;
-    let Some(UiScenePart { line, responses }) = scene_player.get_current(scene_manager) else {
+    let Some(UiScenePart { line, responses }) =
+        scene_player.get_current(scene_manager, scene_commands_events)
+    else {
         return Some(ScenePlayerInput::SelectCurrent);
     };
 

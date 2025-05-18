@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use crate::{GameState, ItemManager, SceneId, SceneManager, ScenePlayer, components::*};
+use crate::{
+    GameState, ItemManager, SceneBookmark, SceneCommands, SceneId, SceneManager, ScenePlayer,
+    components::*,
+};
 
 #[derive(Event)]
 pub struct AttackEvent {
@@ -120,6 +123,32 @@ impl EndSceneEvent {
         if end_scene_events.count() > 0 {
             commands.remove_resource::<ScenePlayer>();
             commands.set_state(GameState::Map);
+        }
+    }
+}
+
+#[derive(Event)]
+pub struct SceneCommandsEvent(pub SceneBookmark, pub SceneCommands);
+
+impl SceneCommandsEvent {
+    pub fn handler(
+        mut scene_player: Option<ResMut<ScenePlayer>>,
+        mut scene_manager: ResMut<SceneManager>,
+        mut scene_commands_events: EventReader<SceneCommandsEvent>,
+    ) {
+        let Some(mut scene_player) = scene_player else {
+            // if no scene is currently playing then we shouldn't have any events to handle.
+            //
+            // there could potentially be an issue here if the scene is exited
+            // before the final commands are executed. if that happens then this
+            // handler should be set to run before the sceen exit handler.
+            assert_eq!(scene_commands_events.len(), 0);
+            return;
+        };
+
+        for SceneCommandsEvent(bookmark, commands) in scene_commands_events.read() {
+            // TODO: I'd like to avoid cloning these
+            scene_player.execute(bookmark.to_owned(), commands.to_owned(), &mut scene_manager);
         }
     }
 }

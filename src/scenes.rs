@@ -12,7 +12,7 @@ use bevy::{
 };
 use serde::Deserialize;
 
-use crate::{EndSceneEvent, components::ArmorSlot};
+use crate::{EndSceneEvent, SceneCommandsEvent, components::ArmorSlot};
 
 type TODO = serde_json::Value;
 
@@ -273,8 +273,12 @@ impl ScenePlayer {
         })
     }
 
-    fn get_dialogue<'a>(&mut self, scene_manager: &'a mut SceneManager) -> Dialogue {
-        let scene = self.get_scene(scene_manager).clone();
+    fn get_dialogue<'a>(
+        &self,
+        scene_manager: &'a SceneManager,
+        scene_commands_events: &mut EventWriter<SceneCommandsEvent>,
+    ) -> &'a Dialogue {
+        let scene = self.get_scene(scene_manager);
         let Some(dialogue) = scene.dialogue.get(&self.current_key) else {
             panic!(
                 "no such dialogue: {:?} in scene: {:#?}",
@@ -284,10 +288,10 @@ impl ScenePlayer {
 
         if let Some(commands) = dialogue.commands.clone() {
             let bookmark = SceneBookmark::new(&self.scene, Some(&self.current_key), None, None);
-            self.execute(bookmark, commands, scene_manager);
+            scene_commands_events.write(SceneCommandsEvent(bookmark, commands));
         }
 
-        dialogue.clone()
+        dialogue
     }
 
     fn reset_line(&mut self) {
@@ -310,15 +314,17 @@ impl ScenePlayer {
         dialogue: &Dialogue,
         scene_manager: &mut SceneManager,
         end_scene_event: &mut EventWriter<EndSceneEvent>,
+        scene_commands_events: &mut EventWriter<SceneCommandsEvent>,
     ) {
         if dialogue.lines.is_empty() {
             end_scene_event.write(EndSceneEvent);
             return;
         }
 
-        let Some(line) = dialogue.lines.get(self.current_line) else {
-            panic!("I'm not sure what state this represents yet")
-        };
+        let line = dialogue
+            .lines
+            .get(self.current_line)
+            .expect("advanced past all lines in dialogue. this should not be possible");
 
         // execute line command
         if let Some(commands) = line.commands.clone() {
@@ -328,12 +334,11 @@ impl ScenePlayer {
                 Some(self.current_line),
                 None,
             );
-            self.execute(bookmark, commands, scene_manager);
+            scene_commands_events.write(SceneCommandsEvent(bookmark, commands));
         }
 
         // execute response
         if let Some(response) = dialogue.responses.get(self.highlighted_response) {
-            // TODO: remove clone
             if let Some(commands) = response.commands.clone() {
                 let bookmark = SceneBookmark::new(
                     &self.scene,
@@ -341,7 +346,7 @@ impl ScenePlayer {
                     None,
                     Some(self.highlighted_response),
                 );
-                self.execute(bookmark, commands, scene_manager);
+                scene_commands_events.write(SceneCommandsEvent(bookmark, commands));
             }
 
             // TODO: skill check, etc.
@@ -366,16 +371,16 @@ impl ScenePlayer {
     }
 
     pub fn get_current<'a>(
-        &'a mut self,
-        scene_manager: &'a mut SceneManager,
-    ) -> Option<UiScenePart> {
-        let dialogue = self.get_dialogue(scene_manager).clone();
+        &'a self,
+        scene_manager: &'a SceneManager,
+        scene_commands_events: &mut EventWriter<SceneCommandsEvent>,
+    ) -> Option<UiScenePart<'a>> {
+        let dialogue = self.get_dialogue(scene_manager, scene_commands_events);
         // some dialogues exist only to run commands and exit
         if dialogue.lines.is_empty() {
             return None;
         }
-        // TODO: remove clone
-        let line = dialogue.lines[self.current_line].clone();
+        let line = &dialogue.lines[self.current_line];
 
         // get responses if necessary
         let responses = {
@@ -385,7 +390,7 @@ impl ScenePlayer {
                 Some(
                     dialogue
                         .responses
-                        .into_iter()
+                        .iter()
                         .filter(|resp| resp.evaluate_conditions(scene_manager))
                         .collect(),
                 )
@@ -399,9 +404,12 @@ impl ScenePlayer {
         input: ScenePlayerInput,
         scene_manager: &mut SceneManager,
         end_scene_event: &mut EventWriter<EndSceneEvent>,
+        scene_commands_events: &mut EventWriter<SceneCommandsEvent>,
     ) {
         // TODO: remove clone
-        let dialogue = self.get_dialogue(scene_manager).clone();
+        let dialogue = self
+            .get_dialogue(scene_manager, scene_commands_events)
+            .clone();
         match input {
             ScenePlayerInput::MoveUp => {
                 self.highlighted_response = self.highlighted_response.saturating_sub(1);
@@ -414,10 +422,20 @@ impl ScenePlayer {
             }
             ScenePlayerInput::Select(i) => {
                 self.highlighted_response = i;
-                self.select(&dialogue, scene_manager, end_scene_event);
+                self.select(
+                    &dialogue,
+                    scene_manager,
+                    end_scene_event,
+                    scene_commands_events,
+                );
             }
             ScenePlayerInput::Select(_) | ScenePlayerInput::SelectCurrent => {
-                self.select(&dialogue, scene_manager, end_scene_event);
+                self.select(
+                    &dialogue,
+                    scene_manager,
+                    end_scene_event,
+                    scene_commands_events,
+                );
             }
         }
     }
@@ -426,7 +444,7 @@ impl ScenePlayer {
         self.highlighted_response
     }
 
-    fn execute(
+    pub fn execute(
         &mut self,
         bookmark: SceneBookmark,
         commands: SceneCommands,
@@ -446,9 +464,9 @@ pub enum ScenePlayerInput {
     SelectCurrent,
 }
 
-pub struct UiScenePart {
-    pub line: Line,
-    pub responses: Option<Vec<Response>>,
+pub struct UiScenePart<'a> {
+    pub line: &'a Line,
+    pub responses: Option<Vec<&'a Response>>,
 }
 
 #[derive(Resource, Debug, Clone, Default)]
