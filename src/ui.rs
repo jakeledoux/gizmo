@@ -1,17 +1,14 @@
-use bevy::{
-    input::ButtonInput,
-    prelude::{EventWriter, KeyCode, Res},
-};
+use bevy::prelude::EventWriter;
 use bevy_egui::{
-    EguiContexts, EguiInput,
+    EguiContexts,
     egui::{
         self, Align2, CollapsingHeader, Color32, Frame, Label, Margin, RichText, ScrollArea,
-        SelectableLabel, Stroke, TextEdit, TextStyle, Ui, Widget, Window, vec2,
+        SelectableLabel, Stroke, TextEdit, TextStyle, Ui, Widget, Window,
     },
 };
 
 use crate::{
-    EndSceneEvent, PlaySceneEvent, SceneCommandsEvent, SceneManager, ScenePlayer, ScenePlayerInput,
+    PlaySceneEvent, SceneCommandsEvent, SceneManager, ScenePlayer, ScenePlayerInput,
     UiScenePart,
 };
 

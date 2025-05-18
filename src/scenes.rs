@@ -5,14 +5,13 @@ use std::{
 };
 
 use bevy::{
-    asset::uuid::Uuid,
-    log::{debug, error, info, warn},
+    log::{error, info},
     platform::collections::HashMap,
     prelude::{EventWriter, Resource},
 };
 use serde::Deserialize;
 
-use crate::{EndSceneEvent, SceneCommandsEvent, components::ArmorSlot};
+use crate::{EndSceneEvent, SceneCommandsEvent};
 
 type TODO = serde_json::Value;
 
@@ -312,7 +311,6 @@ impl ScenePlayer {
     fn select(
         &mut self,
         dialogue: &Dialogue,
-        scene_manager: &mut SceneManager,
         end_scene_event: &mut EventWriter<EndSceneEvent>,
         scene_commands_events: &mut EventWriter<SceneCommandsEvent>,
     ) {
@@ -422,20 +420,10 @@ impl ScenePlayer {
             }
             ScenePlayerInput::Select(i) => {
                 self.highlighted_response = i;
-                self.select(
-                    &dialogue,
-                    scene_manager,
-                    end_scene_event,
-                    scene_commands_events,
-                );
+                self.select(&dialogue, end_scene_event, scene_commands_events);
             }
             ScenePlayerInput::Select(_) | ScenePlayerInput::SelectCurrent => {
-                self.select(
-                    &dialogue,
-                    scene_manager,
-                    end_scene_event,
-                    scene_commands_events,
-                );
+                self.select(&dialogue, end_scene_event, scene_commands_events);
             }
         }
     }

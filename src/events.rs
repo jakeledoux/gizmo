@@ -111,11 +111,7 @@ impl PlaySceneEvent {
 pub struct EndSceneEvent;
 
 impl EndSceneEvent {
-    pub fn handler(
-        mut commands: Commands,
-        scene_manager: Res<SceneManager>,
-        mut end_scene_events: EventReader<EndSceneEvent>,
-    ) {
+    pub fn handler(mut commands: Commands, mut end_scene_events: EventReader<EndSceneEvent>) {
         let end_scene_events = end_scene_events.read();
         if end_scene_events.len() > 1 {
             warn!("more than one end scene event is queued")

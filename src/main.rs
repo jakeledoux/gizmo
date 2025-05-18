@@ -42,7 +42,6 @@ pub struct MapSet;
 pub struct DialogueSet;
 
 fn main() -> anyhow::Result<()> {
-    let frame_time = std::time::Duration::from_secs_f32(1.0 / 60.0);
     App::new()
         // TODO: make Manager structs support hot-reloading
         .add_plugins((
@@ -100,8 +99,6 @@ fn setup(
     mut commands: Commands,
     mut item_manager: ResMut<ItemManager>,
     mut scene_manager: ResMut<SceneManager>,
-    play_scene_events: EventWriter<PlaySceneEvent>,
-    server: Res<AssetServer>,
 ) {
     commands.spawn(Camera2d);
 

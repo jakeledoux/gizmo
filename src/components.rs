@@ -1,12 +1,12 @@
 use bevy::{
-    log::{debug, info, warn},
+    log::{info, warn},
     platform::collections::HashMap,
     prelude::Component,
     reflect::Reflect,
 };
 use serde::Deserialize;
 
-use crate::{AnyItem, ItemId, ItemInstance, ItemInstanceId, ItemKind, ItemManager, utils::*};
+use crate::{ItemInstance, ItemInstanceId, ItemKind, ItemManager, utils::*};
 
 #[derive(Clone, Copy, Reflect, Debug, Hash, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "lowercase")]
