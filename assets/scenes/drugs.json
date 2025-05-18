@@ -10,6 +10,9 @@
     "ronald-reagan": {
       "name": "Ronald Reagan",
       "image": "images/ronald.png"
+    },
+    "narrator": {
+      "name": "Narrator"
     }
   },
   "dialogue": {
