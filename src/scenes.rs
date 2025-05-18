@@ -21,7 +21,7 @@ type TODO = serde_json::Value;
 #[derive(
     Deserialize, Debug, Hash, Clone, PartialEq, Eq, derive_more::From, derive_more::Display,
 )]
-pub struct SceneSectionId(String);
+pub struct SceneSectionId(pub String);
 
 impl Default for SceneSectionId {
     fn default() -> Self {
@@ -32,7 +32,7 @@ impl Default for SceneSectionId {
 #[derive(
     Deserialize, Debug, Hash, Clone, PartialEq, Eq, derive_more::From, derive_more::Display,
 )]
-pub struct SceneId(String);
+pub struct SceneId(pub String);
 
 impl SceneId {
     pub fn new(s: &str) -> Self {
@@ -488,9 +488,9 @@ pub struct UiScenePart<'a> {
 
 #[derive(Resource, Debug, Clone, Default)]
 pub struct SceneManager {
-    scenes: HashMap<SceneId, Scene>,
-    variables: HashMap<String, String>,
-    entries: HashMap<SceneId, SceneSectionId>,
+    pub(crate) scenes: HashMap<SceneId, Scene>,
+    pub(crate) variables: HashMap<String, String>,
+    pub(crate) entries: HashMap<SceneId, SceneSectionId>,
 }
 
 impl SceneManager {

@@ -8,7 +8,7 @@ use bevy_egui::egui::{
 };
 
 use crate::{
-    AttackEvent, Battle, EndBattleEvent, Npc, PlaySceneEvent, Player, RpgEntity,
+    AttackEvent, Battle, EndBattleEvent, ItemManager, Npc, PlaySceneEvent, Player, RpgEntity,
     SceneCommandsEvent, SceneManager, ScenePlayer, ScenePlayerInput, UiScenePart,
 };
 
@@ -171,23 +171,66 @@ pub fn battle_ui(
         });
 }
 
-pub fn debug_ui(ctx: &mut Context, entity_query: Query<(&Npc, &RpgEntity)>) {
+pub fn debug_ui(
+    ctx: &mut Context,
+    // TODO
+    // player_query: Query<&RpgEntity, With<Player>>,
+    entity_query: Query<(&Npc, &RpgEntity)>,
+    scene_manager: &SceneManager,
+    item_manager: &ItemManager,
+) {
     Window::new("Debug Panel").show(ctx, |ui| {
-        CollapsingHeader::new("NPCs")
-            .default_open(true)
-            .show(ui, |ui| {
-                entity_query.iter().for_each(|(npc, rpg_entity)| {
-                    CollapsingHeader::new(format!(
-                        "{}{} ({})",
-                        if rpg_entity.is_dead() { "[DEAD] " } else { "" },
-                        rpg_entity.name(),
-                        npc.id,
-                    ))
-                    .show(ui, |ui| {
-                        ui.label(format!("damage: {}", rpg_entity.damage()));
-                        ui.label(format!("max health: {}", rpg_entity.max_health()));
+        ScrollArea::vertical().show(ui, |ui| {
+            CollapsingHeader::new("NPCs")
+                .default_open(true)
+                .show(ui, |ui| {
+                    entity_query.iter().for_each(|(npc, rpg_entity)| {
+                        CollapsingHeader::new(format!(
+                            "{}{} ({})",
+                            if rpg_entity.is_dead() { "[DEAD] " } else { "" },
+                            rpg_entity.name(),
+                            npc.id,
+                        ))
+                        .show(ui, |ui| {
+                            ui.label(format!("damage: {}", rpg_entity.damage()));
+                            ui.label(format!("max health: {}", rpg_entity.max_health()));
+                        });
+                    })
+                });
+            CollapsingHeader::new("Save Data")
+                .default_open(true)
+                .show(ui, |ui| {
+                    CollapsingHeader::new("Variables")
+                        .default_open(true)
+                        .show(ui, |ui| {
+                            for (k, v) in scene_manager.variables.iter() {
+                                ui.label(format!("{k:?}: {v:?}"));
+                            }
+                        });
+                    CollapsingHeader::new("Scene Entry Points")
+                        .default_open(true)
+                        .show(ui, |ui| {
+                            for (k, v) in scene_manager.entries.iter() {
+                                ui.label(format!("{:?}: {:?}", k.0, v.0));
+                            }
+                        });
+                });
+            CollapsingHeader::new("Loaded Resources")
+                .default_open(true)
+                .show(ui, |ui| {
+                    CollapsingHeader::new("Scenes").show(ui, |ui| {
+                        for scene_id in scene_manager.scenes.keys() {
+                            ui.label(&scene_id.0);
+                        }
+                    });
+                    CollapsingHeader::new("Items").show(ui, |ui| {
+                        for (item_id, any_item) in item_manager.items.iter() {
+                            CollapsingHeader::new(&item_id.0).show(ui, |ui| {
+                                ui.label(format!("{any_item:#?}"));
+                            });
+                        }
                     });
                 })
-            })
+        })
     });
 }

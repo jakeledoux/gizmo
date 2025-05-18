@@ -272,7 +272,7 @@ impl Shield {
 #[derive(
     Debug, Hash, Clone, PartialEq, Eq, PartialOrd, Ord, derive_more::From, derive_more::Display,
 )]
-pub struct ItemId(String);
+pub struct ItemId(pub String);
 
 impl ItemId {
     pub fn new(s: &str) -> Self {
@@ -406,7 +406,7 @@ impl AnyItem {
 
 #[derive(Resource, Debug, Clone, Default)]
 pub struct ItemManager {
-    items: HashMap<ItemId, AnyItem>,
+    pub(crate) items: HashMap<ItemId, AnyItem>,
 }
 
 impl ItemManager {

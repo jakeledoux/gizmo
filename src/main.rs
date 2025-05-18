@@ -28,6 +28,11 @@ const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets");
 #[cfg(not(debug_assertions))]
 const ASSETS_PATH: &str = "assets";
 
+#[cfg(debug_assertions)]
+pub const DEBUG: bool = true;
+#[cfg(not(debug_assertions))]
+pub const DEBUG: bool = false;
+
 #[derive(Resource, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Battle(Entity);
 
@@ -108,40 +113,24 @@ fn setup(
     mut item_manager: ResMut<ItemManager>,
     mut scene_manager: ResMut<SceneManager>,
     mut state_manager: ResMut<StateManager>,
-    mut spawn_npc_event: EventWriter<SpawnNpcEvent>,
 ) {
     commands.spawn(Camera2d);
-
+    // value for text input for selecting scenes
+    commands.insert_resource(DebugPlaySceneId::default());
+    // start game in map mode
     state_manager.push(&mut commands, GameState::Map);
 
+    // load assets
     if let Err(e) = item_manager.load_folder(Path::new(ASSETS_PATH).join("items")) {
         warn!("could not load items: {e}")
     };
-
     if let Err(e) = scene_manager.load_folder(Path::new(ASSETS_PATH).join("scenes")) {
         warn!("could not load scene: {e}")
     };
 
     // spawn player
-    let mut jake = RpgEntity::new(Some("Jake".to_string()));
-    if let Some(vampire_gloves) =
-        ItemInstance::spawn(ItemId::new("dragonbone-sword"), &item_manager)
-    {
-        let instance_id = jake.inventory.insert(vampire_gloves);
-        jake.equip(instance_id);
-    }
-    commands.spawn((Player, jake));
-
-    spawn_npc_event.write(SpawnNpcEvent(
-        NpcId("boba".into()),
-        Character {
-            name: "Boba Fett".to_string(),
-            ..Default::default()
-        },
-    ));
-
-    commands.insert_resource(DebugPlaySceneId::default())
-    // play_scene_events.write(PlaySceneEvent(SceneId::new("mike")));
+    // TODO: spawn with inventory in debug mode
+    commands.spawn((Player, RpgEntity::new(Some("Jake".to_string()))));
 }
 
 fn register_events(app: &mut App) {
@@ -186,6 +175,7 @@ fn ui_system(
     mut contexts: EguiContexts,
     game_state: Res<State<GameState>>,
     mut scene_manager: ResMut<SceneManager>,
+    item_manager: Res<ItemManager>,
     mut scene_player: Option<ResMut<ScenePlayer>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut play_scene_event: EventWriter<PlaySceneEvent>,
@@ -202,7 +192,9 @@ fn ui_system(
     let end_scene_event = &mut end_scene_event;
     let scene_command_event = &mut scene_command_event;
 
-    debug_ui(contexts.ctx_mut(), npc_query);
+    if DEBUG {
+        debug_ui(contexts.ctx_mut(), npc_query, &scene_manager, &item_manager);
+    }
 
     match **game_state {
         GameState::Map => {
