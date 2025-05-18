@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     ops::Add,
     path::{Path, PathBuf},
 };
@@ -36,6 +37,31 @@ impl SceneId {
     }
 }
 
+#[derive(Debug, Hash, Clone, PartialEq, Eq)]
+pub struct SceneBookmark(String);
+
+impl SceneBookmark {
+    pub fn new(
+        scene: &SceneId,
+        section: Option<&SceneSectionId>,
+        line: Option<usize>,
+        response: Option<usize>,
+    ) -> Self {
+        let mut bookmark = String::from(&scene.0);
+        if let Some(section) = section {
+            bookmark.push_str(&format!(":section({})", section.0))
+        };
+        if let Some(line) = line {
+            bookmark.push_str(&format!(":line({})", line))
+        };
+        if let Some(response) = response {
+            bookmark.push_str(&format!(":response({})", response))
+        };
+
+        Self(bookmark)
+    }
+}
+
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Scene {
@@ -46,7 +72,7 @@ pub struct Scene {
     quests: Option<TODO>,
     dialogue: HashMap<SceneSectionId, Dialogue>,
     #[serde(flatten)]
-    commands: Option<SceneCommands>,
+    commands: Option<SceneCommands>, // TODO: execute these?
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -83,7 +109,7 @@ pub struct Dialogue {
     #[serde(alias = "resp", default)]
     responses: Vec<Response>,
     #[serde(flatten)]
-    commands: Option<SceneCommands>,
+    commands: Option<SceneCommands>, // TODO: execute these?
     #[serde(alias = "cont")]
     continue_to: Option<SceneSectionId>,
 }
@@ -95,7 +121,7 @@ pub struct Line {
     #[serde(alias = "txt")]
     pub text: String,
     #[serde(flatten)]
-    commands: Option<SceneCommands>,
+    commands: Option<SceneCommands>, // TODO: execute these?
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -183,7 +209,7 @@ impl Condition {
 pub struct SceneCommands {
     reward_gold: Option<RewardGoldCommand>,
     update_characters: Option<HashMap<CharacterId, CharacterUpdate>>,
-    scene_entry: Option<HashMap<String, String>>,
+    scene_entry: Option<HashMap<SceneId, SceneSectionId>>,
     #[serde(alias = "vars")]
     variables: Option<HashMap<String, String>>,
     battle: Option<TODO>,
@@ -196,7 +222,12 @@ impl SceneCommands {
     pub fn execute(self, scene_manager: &mut SceneManager) {
         // TODO: reward_gold
         // TODO: update_characters
-        // TODO: scene_entry
+        if let Some(scene_entry) = self.scene_entry {
+            info!("updating scene entry points: {scene_entry:?}");
+            scene_entry.into_iter().for_each(|(scene, key)| {
+                scene_manager.update_scene_entry(scene, key);
+            });
+        }
         if let Some(variables) = self.variables {
             info!("updating variables: {variables:?}");
             scene_manager.update_variables(variables.into_iter());
@@ -221,6 +252,7 @@ pub struct ScenePlayer {
     current_key: SceneSectionId,
     current_line: usize,
     highlighted_response: usize,
+    executed_commands: HashSet<SceneBookmark>,
 }
 
 impl ScenePlayer {
@@ -231,6 +263,7 @@ impl ScenePlayer {
             current_key: String::from("start").into(),
             current_line: 0,
             highlighted_response: 0,
+            executed_commands: HashSet::default(),
         }
     }
 
@@ -240,8 +273,8 @@ impl ScenePlayer {
         })
     }
 
-    fn get_dialogue<'a>(&self, scene_manager: &'a SceneManager) -> &'a Dialogue {
-        let scene = self.get_scene(scene_manager);
+    fn get_dialogue<'a>(&mut self, scene_manager: &'a mut SceneManager) -> Dialogue {
+        let scene = self.get_scene(scene_manager).clone();
         let Some(dialogue) = scene.dialogue.get(&self.current_key) else {
             panic!(
                 "no such dialogue: {:?} in scene: {:#?}",
@@ -249,7 +282,12 @@ impl ScenePlayer {
             )
         };
 
-        dialogue
+        if let Some(commands) = dialogue.commands.clone() {
+            let bookmark = SceneBookmark::new(&self.scene, Some(&self.current_key), None, None);
+            self.execute(bookmark, commands, scene_manager);
+        }
+
+        dialogue.clone()
     }
 
     fn reset_line(&mut self) {
@@ -275,12 +313,35 @@ impl ScenePlayer {
     ) {
         if dialogue.lines.is_empty() {
             end_scene_event.write(EndSceneEvent);
+            return;
         }
+
+        let Some(line) = dialogue.lines.get(self.current_line) else {
+            panic!("I'm not sure what state this represents yet")
+        };
+
+        // execute line command
+        if let Some(commands) = line.commands.clone() {
+            let bookmark = SceneBookmark::new(
+                &self.scene,
+                Some(&self.current_key),
+                Some(self.current_line),
+                None,
+            );
+            self.execute(bookmark, commands, scene_manager);
+        }
+
         // execute response
         if let Some(response) = dialogue.responses.get(self.highlighted_response) {
+            // TODO: remove clone
             if let Some(commands) = response.commands.clone() {
-                // TODO: remove clone
-                commands.clone().execute(scene_manager);
+                let bookmark = SceneBookmark::new(
+                    &self.scene,
+                    Some(&self.current_key),
+                    None,
+                    Some(self.highlighted_response),
+                );
+                self.execute(bookmark, commands, scene_manager);
             }
 
             // TODO: skill check, etc.
@@ -304,13 +365,17 @@ impl ScenePlayer {
         }
     }
 
-    pub fn get_current<'a>(&'a self, scene_manager: &'a SceneManager) -> Option<UiScenePart<'a>> {
-        let dialogue = self.get_dialogue(scene_manager);
+    pub fn get_current<'a>(
+        &'a mut self,
+        scene_manager: &'a mut SceneManager,
+    ) -> Option<UiScenePart> {
+        let dialogue = self.get_dialogue(scene_manager).clone();
         // some dialogues exist only to run commands and exit
         if dialogue.lines.is_empty() {
             return None;
         }
-        let line = &dialogue.lines[self.current_line];
+        // TODO: remove clone
+        let line = dialogue.lines[self.current_line].clone();
 
         // get responses if necessary
         let responses = {
@@ -320,7 +385,7 @@ impl ScenePlayer {
                 Some(
                     dialogue
                         .responses
-                        .iter()
+                        .into_iter()
                         .filter(|resp| resp.evaluate_conditions(scene_manager))
                         .collect(),
                 )
@@ -360,6 +425,17 @@ impl ScenePlayer {
     pub fn highlighted_response(&self) -> usize {
         self.highlighted_response
     }
+
+    fn execute(
+        &mut self,
+        bookmark: SceneBookmark,
+        commands: SceneCommands,
+        scene_manager: &mut SceneManager,
+    ) {
+        if self.executed_commands.insert(bookmark) {
+            commands.execute(scene_manager);
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
@@ -370,15 +446,16 @@ pub enum ScenePlayerInput {
     SelectCurrent,
 }
 
-pub struct UiScenePart<'a> {
-    pub line: &'a Line,
-    pub responses: Option<Vec<&'a Response>>,
+pub struct UiScenePart {
+    pub line: Line,
+    pub responses: Option<Vec<Response>>,
 }
 
 #[derive(Resource, Debug, Clone, Default)]
 pub struct SceneManager {
     scenes: HashMap<SceneId, Scene>,
     variables: HashMap<String, String>,
+    entries: HashMap<SceneId, SceneSectionId>,
 }
 
 impl SceneManager {
@@ -425,9 +502,15 @@ impl SceneManager {
     }
 
     pub fn play_scene(&self, scene: SceneId) -> Option<ScenePlayer> {
-        self.scenes
-            .contains_key(&scene)
-            .then(|| ScenePlayer::new(scene))
+        self.scenes.contains_key(&scene).then(|| {
+            let scene_entry = self.entries.get(&scene);
+            let mut scene_player = ScenePlayer::new(scene);
+            if let Some(key) = scene_entry {
+                scene_player.set_key(key.to_owned());
+            }
+
+            scene_player
+        })
     }
 
     fn update_variables<U>(&mut self, variables: U)
@@ -439,5 +522,13 @@ impl SceneManager {
 
     fn get_variable(&self, variable: &str) -> Option<&String> {
         self.variables.get(variable)
+    }
+
+    fn update_scene_entry(
+        &mut self,
+        scene: SceneId,
+        key: SceneSectionId,
+    ) -> Option<SceneSectionId> {
+        self.entries.insert(scene, key)
     }
 }
