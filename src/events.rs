@@ -90,15 +90,18 @@ impl PlaySceneEvent {
         mut commands: Commands,
         scene_manager: Res<SceneManager>,
         mut play_scene_events: EventReader<PlaySceneEvent>,
+        entity_id_query: Query<&RpgEntityId>,
     ) {
         let play_scene_events = play_scene_events.read();
         if play_scene_events.len() > 1 {
             warn!("more than one play scene event is queued")
         }
         if let Some(play_scene_event) = play_scene_events.last() {
-            if let Some(scene) = scene_manager.play_scene(play_scene_event.0.clone()) {
+            if let Some(scene_player) =
+                scene_manager.play_scene(&mut commands, entity_id_query, play_scene_event.0.clone())
+            {
                 info!("playing scene: {:?}", play_scene_event.0);
-                commands.insert_resource(scene);
+                commands.insert_resource(scene_player);
                 commands.set_state(GameState::Dialogue)
             } else {
                 warn!("was not able to play scene: {:?}", play_scene_event.0)
@@ -131,6 +134,7 @@ impl SceneCommandsEvent {
         scene_player: Option<ResMut<ScenePlayer>>,
         mut scene_manager: ResMut<SceneManager>,
         mut scene_commands_events: EventReader<SceneCommandsEvent>,
+        mut start_battle_event: EventWriter<StartBattleEvent>,
     ) {
         let Some(mut scene_player) = scene_player else {
             // if no scene is currently playing then we shouldn't have any events to handle.
@@ -144,7 +148,44 @@ impl SceneCommandsEvent {
 
         for SceneCommandsEvent(bookmark, commands) in scene_commands_events.read() {
             // TODO: I'd like to avoid cloning these
-            scene_player.execute(bookmark.to_owned(), commands.to_owned(), &mut scene_manager);
+            scene_player.execute(
+                bookmark.to_owned(),
+                commands.to_owned(),
+                &mut scene_manager,
+                &mut start_battle_event,
+            );
+        }
+    }
+}
+
+#[derive(Event)]
+pub struct StartBattleEvent;
+
+impl StartBattleEvent {
+    pub fn handler(mut commands: Commands, mut start_battle_events: EventReader<StartBattleEvent>) {
+        let start_battle_events = start_battle_events.read();
+        if start_battle_events.len() > 1 {
+            warn!("more than one start battle event is queued")
+        }
+        if let Some(_start_battle_event) = start_battle_events.last() {
+            info!("starting battle! (not really)");
+            commands.set_state(GameState::Battle);
+        }
+    }
+}
+
+#[derive(Event)]
+pub struct EndBattleEvent;
+
+impl EndBattleEvent {
+    pub fn handler(mut commands: Commands, mut end_battle_events: EventReader<EndBattleEvent>) {
+        let end_battle_events = end_battle_events.read();
+        if end_battle_events.len() > 1 {
+            warn!("more than one end battle event is queued")
+        }
+        if end_battle_events.count() > 0 {
+            info!("ending battle! (not really)");
+            commands.set_state(GameState::Map);
         }
     }
 }

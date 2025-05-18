@@ -1,9 +1,12 @@
+use std::path::PathBuf;
+
 use bevy::{
     log::{info, warn},
     platform::collections::HashMap,
     prelude::Component,
     reflect::Reflect,
 };
+use derive_more::Display;
 use serde::Deserialize;
 
 use crate::{ItemInstance, ItemInstanceId, ItemKind, ItemManager, utils::*};
@@ -64,12 +67,34 @@ impl ArmorSlots {
 #[derive(Component)]
 pub struct Player;
 
-#[derive(Component)]
-pub struct Npc;
+#[derive(Component, Default, Debug, Hash, Clone, PartialEq, Eq)]
+pub struct Npc {
+    pub image: NpcImage,
+    pub voice: NpcVoice,
+}
+
+#[derive(Component, Debug, Hash, Clone, PartialEq, Eq, Deserialize)]
+pub struct NpcImage(PathBuf);
+impl Default for NpcImage {
+    fn default() -> Self {
+        Self("images/default.png".into())
+    }
+}
+
+#[derive(Component, Debug, Hash, Clone, PartialEq, Eq, Deserialize)]
+pub struct NpcVoice(PathBuf);
+impl Default for NpcVoice {
+    fn default() -> Self {
+        Self("default".into())
+    }
+}
+
+#[derive(Component, Debug, Display)]
+pub struct RpgEntityId(pub String);
 
 #[derive(Component, Debug)]
 pub struct RpgEntity {
-    name: &'static str,
+    name: String,
     damage: f32,
     armor: ArmorSlots,
     weapon: Option<ItemInstanceId>,
@@ -78,9 +103,9 @@ pub struct RpgEntity {
 }
 
 impl RpgEntity {
-    pub fn new(name: &'static str) -> Self {
+    pub fn new(name: Option<String>) -> Self {
         Self {
-            name,
+            name: name.unwrap_or_else(|| "?".to_string()),
             damage: 0.0,
             armor: ArmorSlots::default(),
             weapon: None,
@@ -90,7 +115,7 @@ impl RpgEntity {
     }
 
     pub fn name(&self) -> &str {
-        self.name
+        &self.name
     }
 
     pub fn equip(&mut self, instance_id: ItemInstanceId) -> bool {
@@ -149,6 +174,10 @@ impl RpgEntity {
         } else {
             1.0
         }
+    }
+
+    pub fn damage(&self) -> f32 {
+        self.damage
     }
 }
 

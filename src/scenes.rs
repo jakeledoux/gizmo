@@ -7,11 +7,13 @@ use std::{
 use bevy::{
     log::{error, info},
     platform::collections::HashMap,
-    prelude::{EventWriter, Resource},
+    prelude::{Commands, EventWriter, Query, Resource},
 };
 use serde::Deserialize;
 
-use crate::{EndSceneEvent, SceneCommandsEvent};
+use crate::{
+    EndSceneEvent, NpcImage, NpcVoice, RpgEntityId, SceneCommandsEvent, StartBattleEvent, utils,
+};
 
 #[allow(clippy::upper_case_acronyms)]
 type TODO = serde_json::Value;
@@ -73,9 +75,8 @@ impl SceneBookmark {
 pub struct Scene {
     id: SceneId,
     music: Option<String>,
-    characters: Option<HashMap<CharacterId, Character>>,
-    vendors: Option<TODO>,
-    quests: Option<TODO>,
+    #[serde(flatten)]
+    definitions: SceneDefinitions,
     dialogue: HashMap<SceneSectionId, Dialogue>,
     #[serde(flatten)]
     commands: Option<SceneCommands>, // TODO: execute these?
@@ -83,19 +84,19 @@ pub struct Scene {
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Character {
-    name: String,
+    pub name: String,
     #[serde(default)]
-    image: PathBuf,
+    pub image: NpcImage,
     #[serde(default)]
-    voice: String,
+    pub voice: NpcVoice,
 }
 
 impl Default for Character {
     fn default() -> Self {
         Self {
             name: "?".to_string(),
-            image: PathBuf::from("images/unknown.png"),
-            voice: "default".to_string(),
+            image: NpcImage::default(),
+            voice: NpcVoice::default(),
         }
     }
 }
@@ -210,6 +211,35 @@ impl Condition {
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq, derive_more::From)]
 #[serde(rename_all = "kebab-case")]
 #[serde(deny_unknown_fields)]
+pub struct SceneDefinitions {
+    characters: Option<HashMap<CharacterId, Character>>,
+    vendors: Option<TODO>,
+    quests: Option<TODO>,
+}
+impl SceneDefinitions {
+    fn create(&self, commands: &mut Commands, entity_id_query: Query<&RpgEntityId>) {
+        if let Some(characters) = &self.characters {
+            characters.iter().for_each(|(character_id, character)| {
+                utils::spawn_npc(
+                    commands,
+                    entity_id_query,
+                    character_id.0.clone(),
+                    character.clone(),
+                );
+            });
+        }
+        if let Some(_vendors) = &self.vendors {
+            todo!()
+        }
+        if let Some(_quests) = &self.quests {
+            todo!()
+        }
+    }
+}
+
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq, derive_more::From)]
+#[serde(rename_all = "kebab-case")]
+#[serde(deny_unknown_fields)]
 pub struct SceneCommands {
     reward_gold: Option<RewardGoldCommand>,
     update_characters: Option<HashMap<CharacterId, CharacterUpdate>>,
@@ -223,7 +253,11 @@ pub struct SceneCommands {
 }
 
 impl SceneCommands {
-    pub fn execute(self, scene_manager: &mut SceneManager) {
+    pub fn execute(
+        self,
+        scene_manager: &mut SceneManager,
+        start_battle_event: &mut EventWriter<StartBattleEvent>,
+    ) {
         // TODO: reward_gold
         // TODO: update_characters
         if let Some(scene_entry) = self.scene_entry {
@@ -236,7 +270,9 @@ impl SceneCommands {
             info!("updating variables: {variables:?}");
             scene_manager.update_variables(variables);
         }
-        // TODO: battle
+        if let Some(_battle) = self.battle {
+            start_battle_event.write(StartBattleEvent);
+        }
         // TODO: kill_character
         // TODO: set_quest_stage
         // TODO: complete_quest
@@ -434,9 +470,10 @@ impl ScenePlayer {
         bookmark: SceneBookmark,
         commands: SceneCommands,
         scene_manager: &mut SceneManager,
+        start_battle_event: &mut EventWriter<StartBattleEvent>,
     ) {
         if self.executed_commands.insert(bookmark) {
-            commands.execute(scene_manager);
+            commands.execute(scene_manager, start_battle_event);
         }
     }
 }
@@ -503,10 +540,18 @@ impl SceneManager {
         Ok(self)
     }
 
-    pub fn play_scene(&self, scene: SceneId) -> Option<ScenePlayer> {
-        self.scenes.contains_key(&scene).then(|| {
-            let scene_entry = self.entries.get(&scene);
-            ScenePlayer::new(scene, scene_entry.cloned())
+    pub fn play_scene(
+        &self,
+        commands: &mut Commands,
+        entity_id_query: Query<&RpgEntityId>,
+        scene_id: SceneId,
+    ) -> Option<ScenePlayer> {
+        self.scenes.contains_key(&scene_id).then(|| {
+            self.scenes[&scene_id]
+                .definitions
+                .create(commands, entity_id_query);
+            let scene_entry = self.entries.get(&scene_id);
+            ScenePlayer::new(scene_id, scene_entry.cloned())
         })
     }
 

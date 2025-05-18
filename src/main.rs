@@ -28,6 +28,7 @@ const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets");
 #[cfg(not(debug_assertions))]
 const ASSETS_PATH: &str = "assets";
 
+// TODO: state should be a stack
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum GameState {
     Map,
@@ -59,6 +60,8 @@ fn main() -> anyhow::Result<()> {
         .add_event::<PlaySceneEvent>()
         .add_event::<EndSceneEvent>()
         .add_event::<SceneCommandsEvent>()
+        .add_event::<StartBattleEvent>()
+        .add_event::<EndBattleEvent>()
         .configure_sets(
             Update,
             (
@@ -79,10 +82,13 @@ fn main() -> anyhow::Result<()> {
                 AttackEvent::handler,
                 DamageEvent::handler,
                 DeathEvent::handler,
-                // meta events
+                // scene events
                 PlaySceneEvent::handler,
                 EndSceneEvent::handler,
                 SceneCommandsEvent::handler.before(EndSceneEvent::handler),
+                // battle events
+                StartBattleEvent::handler,
+                EndBattleEvent::handler,
             ),
         )
         // rendering
@@ -99,6 +105,7 @@ fn setup(
     mut commands: Commands,
     mut item_manager: ResMut<ItemManager>,
     mut scene_manager: ResMut<SceneManager>,
+    entity_id_query: Query<&RpgEntityId>,
 ) {
     commands.spawn(Camera2d);
 
@@ -110,7 +117,8 @@ fn setup(
         warn!("could not load scene: {e}")
     };
 
-    let mut jake = RpgEntity::new("Jake");
+    // spawn player
+    let mut jake = RpgEntity::new(Some("Jake".to_string()));
     if let Some(vampire_gloves) =
         ItemInstance::spawn(ItemId::new("dragonbone-sword"), &item_manager)
     {
@@ -118,7 +126,16 @@ fn setup(
         jake.equip(instance_id);
     }
     commands.spawn((Player, jake));
-    commands.spawn((Npc, RpgEntity::new("Boba Fett")));
+
+    utils::spawn_npc(
+        &mut commands,
+        entity_id_query,
+        "boba".to_string(),
+        Character {
+            name: "Boba Fett".to_string(),
+            ..Default::default()
+        },
+    );
 
     commands.insert_resource(DebugPlaySceneId::default())
     // play_scene_events.write(PlaySceneEvent(SceneId::new("mike")));
@@ -133,7 +150,7 @@ fn debug_quit_immediately(mut exit_event: EventWriter<AppExit>) {
 
 #[allow(clippy::too_many_arguments)]
 fn ui_system(
-    contexts: EguiContexts,
+    mut contexts: EguiContexts,
     game_state: Res<State<GameState>>,
     mut scene_manager: ResMut<SceneManager>,
     mut scene_player: Option<ResMut<ScenePlayer>>,
@@ -142,14 +159,21 @@ fn ui_system(
     mut end_scene_event: EventWriter<EndSceneEvent>,
     mut scene_command_event: EventWriter<SceneCommandsEvent>,
     mut debug_new_scene_id: ResMut<DebugPlaySceneId>,
+    entity_query: Query<(&RpgEntityId, &RpgEntity)>,
 ) {
     let play_scene_event = &mut play_scene_event;
     let end_scene_event = &mut end_scene_event;
     let scene_command_event = &mut scene_command_event;
 
+    debug_ui(contexts.ctx_mut(), entity_query);
+
     match **game_state {
         GameState::Map => {
-            map_ui(contexts, play_scene_event, &mut debug_new_scene_id.0);
+            map_ui(
+                contexts.ctx_mut(),
+                play_scene_event,
+                &mut debug_new_scene_id.0,
+            );
         }
         GameState::Dialogue => {
             let Some(ref mut scene_player) = scene_player else {
@@ -157,7 +181,7 @@ fn ui_system(
             };
 
             if let Some(input) = dialogue_ui(
-                contexts,
+                contexts.ctx_mut(),
                 scene_player,
                 &mut scene_manager,
                 scene_command_event,

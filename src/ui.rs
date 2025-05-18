@@ -1,19 +1,16 @@
-use bevy::prelude::EventWriter;
-use bevy_egui::{
-    EguiContexts,
-    egui::{
-        self, Align2, CollapsingHeader, Color32, Frame, Label, Margin, RichText, ScrollArea,
-        SelectableLabel, Stroke, TextEdit, TextStyle, Ui, Widget, Window,
-    },
+use bevy::prelude::{EventWriter, Query};
+use bevy_egui::egui::{
+    self, Align2, CollapsingHeader, Color32, Context, Frame, Label, Margin, RichText, ScrollArea,
+    SelectableLabel, Stroke, TextEdit, TextStyle, Ui, Widget, Window,
 };
 
 use crate::{
-    PlaySceneEvent, SceneCommandsEvent, SceneManager, ScenePlayer, ScenePlayerInput,
-    UiScenePart,
+    PlaySceneEvent, RpgEntity, RpgEntityId, SceneCommandsEvent, SceneManager, ScenePlayer,
+    ScenePlayerInput, UiScenePart,
 };
 
 pub fn dialogue_ui(
-    mut contexts: EguiContexts,
+    ctx: &mut Context,
     scene_player: &mut ScenePlayer,
     scene_manager: &mut SceneManager,
     scene_commands_events: &mut EventWriter<SceneCommandsEvent>,
@@ -37,7 +34,7 @@ pub fn dialogue_ui(
                 })
                 .inner_margin(Margin::same(10)),
         )
-        .show(contexts.ctx_mut(), |ui| {
+        .show(ctx, |ui| {
             ui.vertical(|ui| {
                 // speaker row
                 ui.horizontal(|ui| {
@@ -95,13 +92,13 @@ fn response_button(ui: &mut Ui, text: &str, selected: bool) -> bool {
 }
 
 pub fn map_ui(
-    mut contexts: EguiContexts,
+    ctx: &mut Context,
     play_scene_event: &mut EventWriter<PlaySceneEvent>,
     debug_new_scene_id: &mut String,
 ) {
-    Window::new("Debug Panel")
+    Window::new("Map Mode")
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
-        .show(contexts.ctx_mut(), |ui| {
+        .show(ctx, |ui| {
             CollapsingHeader::new("Play Scene")
                 .default_open(true)
                 .show(ui, |ui| {
@@ -116,4 +113,22 @@ pub fn map_ui(
                     })
                 })
         });
+}
+
+pub fn debug_ui(ctx: &mut Context, entity_query: Query<(&RpgEntityId, &RpgEntity)>) {
+    Window::new("Debug Panel").show(ctx, |ui| {
+        CollapsingHeader::new("Characters")
+            .default_open(true)
+            .show(ui, |ui| {
+                entity_query.iter().for_each(|(entity_id, entity)| {
+                    CollapsingHeader::new(format!("{} ({})", entity.name(), entity_id)).show(
+                        ui,
+                        |ui| {
+                            ui.label(format!("damage: {}", entity.damage()));
+                            ui.label(format!("max health: {}", entity.max_health()));
+                        },
+                    );
+                })
+            })
+    });
 }
