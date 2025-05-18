@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    Character, CharacterId, GameState, ItemManager, SceneBookmark, SceneCommands, SceneId,
-    SceneManager, ScenePlayer, components::*, utils,
+    Battle, Character, GameState, ItemManager, SceneBookmark, SceneCommands, SceneId, SceneManager,
+    ScenePlayer, StateManager, components::*, utils,
 };
 
 #[derive(Event)]
@@ -69,15 +69,10 @@ impl DamageEvent {
 pub struct DeathEvent(pub Entity);
 
 impl DeathEvent {
-    pub fn handler(
-        query: Query<&RpgEntity>,
-        mut commands: Commands,
-        mut death_events: EventReader<DeathEvent>,
-    ) {
-        for &DeathEvent(victim_id) in death_events.read() {
-            let victim = query.get(victim_id).unwrap();
+    pub fn handler(query: Query<&RpgEntity>, mut death_events: EventReader<DeathEvent>) {
+        for &DeathEvent(entity) in death_events.read() {
+            let victim = query.get(entity).unwrap();
             info!("{:?} has died", victim.name());
-            commands.entity(victim_id).despawn();
         }
     }
 }
@@ -91,6 +86,7 @@ impl PlaySceneEvent {
         scene_manager: Res<SceneManager>,
         mut play_scene_events: EventReader<PlaySceneEvent>,
         mut spawn_npc_event: EventWriter<SpawnNpcEvent>,
+        mut state_manager: ResMut<StateManager>,
     ) {
         let play_scene_events = play_scene_events.read();
         if play_scene_events.len() > 1 {
@@ -102,7 +98,7 @@ impl PlaySceneEvent {
             {
                 info!("playing scene: {:?}", play_scene_event.0);
                 commands.insert_resource(scene_player);
-                commands.set_state(GameState::Dialogue)
+                state_manager.push(&mut commands, GameState::Dialogue);
             } else {
                 warn!("was not able to play scene: {:?}", play_scene_event.0)
             }
@@ -114,14 +110,21 @@ impl PlaySceneEvent {
 pub struct EndSceneEvent;
 
 impl EndSceneEvent {
-    pub fn handler(mut commands: Commands, mut end_scene_events: EventReader<EndSceneEvent>) {
+    pub fn handler(
+        mut commands: Commands,
+        mut end_scene_events: EventReader<EndSceneEvent>,
+        mut state_manager: ResMut<StateManager>,
+    ) {
         let end_scene_events = end_scene_events.read();
         if end_scene_events.len() > 1 {
             warn!("more than one end scene event is queued")
         }
         if end_scene_events.count() > 0 {
             commands.remove_resource::<ScenePlayer>();
-            commands.set_state(GameState::Map);
+            assert!(matches!(
+                state_manager.pop(&mut commands),
+                Some(GameState::Dialogue)
+            ));
         }
     }
 }
@@ -159,17 +162,29 @@ impl SceneCommandsEvent {
 }
 
 #[derive(Event)]
-pub struct StartBattleEvent;
+pub struct StartBattleEvent(pub NpcId);
 
 impl StartBattleEvent {
-    pub fn handler(mut commands: Commands, mut start_battle_events: EventReader<StartBattleEvent>) {
+    pub fn handler(
+        mut commands: Commands,
+        mut start_battle_events: EventReader<StartBattleEvent>,
+        mut state_manager: ResMut<StateManager>,
+        npc_query: Query<(Entity, &Npc)>,
+    ) {
         let start_battle_events = start_battle_events.read();
         if start_battle_events.len() > 1 {
             warn!("more than one start battle event is queued")
         }
-        if let Some(_start_battle_event) = start_battle_events.last() {
-            info!("starting battle! (not really)");
-            commands.set_state(GameState::Battle);
+        if let Some(StartBattleEvent(npc_id)) = start_battle_events.last() {
+            let Some((entity, _npc)) = npc_query.iter().find(|(_entity, npc)| &npc.id == npc_id)
+            else {
+                error!("cannot start battle. no such NPC with id: {npc_id}");
+                return;
+            };
+
+            info!("starting battle with: {npc_id}");
+            state_manager.push(&mut commands, GameState::Battle);
+            commands.insert_resource(Battle(entity));
         }
     }
 }
@@ -178,34 +193,40 @@ impl StartBattleEvent {
 pub struct EndBattleEvent;
 
 impl EndBattleEvent {
-    pub fn handler(mut commands: Commands, mut end_battle_events: EventReader<EndBattleEvent>) {
+    pub fn handler(
+        mut commands: Commands,
+        mut end_battle_events: EventReader<EndBattleEvent>,
+        mut state_manager: ResMut<StateManager>,
+    ) {
         let end_battle_events = end_battle_events.read();
         if end_battle_events.len() > 1 {
             warn!("more than one end battle event is queued")
         }
         if end_battle_events.count() > 0 {
-            info!("ending battle! (not really)");
-            commands.set_state(GameState::Map);
+            info!("ending battle");
+            assert!(matches!(
+                state_manager.pop(&mut commands),
+                Some(GameState::Battle)
+            ));
         }
     }
 }
 
 #[derive(Event)]
-pub struct SpawnNpcEvent(pub CharacterId, pub Character);
+pub struct SpawnNpcEvent(pub NpcId, pub Character);
 
 impl SpawnNpcEvent {
     pub fn handler(
         mut commands: Commands,
-        entity_id_query: Query<&RpgEntityId>,
+        npc_query: Query<&Npc>,
         mut spawn_npc_events: EventReader<SpawnNpcEvent>,
     ) {
         for SpawnNpcEvent(id, character) in spawn_npc_events.read() {
-            utils::spawn_npc(
-                &mut commands,
-                entity_id_query,
-                id.to_string(),
-                character.clone(),
-            );
+            if utils::spawn_npc(&mut commands, npc_query, id.to_owned(), character.clone()) {
+                info!("spawned NPC: {id:?}");
+            } else {
+                info!("skipped spawning NPC: {id:?}");
+            }
         }
     }
 }

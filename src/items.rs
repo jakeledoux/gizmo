@@ -415,7 +415,7 @@ impl ItemManager {
     }
 
     pub fn load_items<P: AsRef<Path>>(&mut self, path: P) -> anyhow::Result<()> {
-        info!("attempting to item file: {:?}", path.as_ref());
+        info!("loading items from file: {:?}", path.as_ref());
         let item_json = std::fs::read_to_string(path)?;
         let item_file: ItemFile = serde_json::from_str(&item_json)?;
         item_file.into_iter().for_each(|item| {
@@ -440,7 +440,8 @@ impl ItemManager {
                     .extension()
                     .map(|ext| ext == "json")
                     .unwrap_or(false)
-            }).try_for_each(|entry| self.load_items(entry.path()))
+            })
+            .try_for_each(|entry| self.load_items(entry.path()))
     }
 
     pub fn with_load_folder<P: AsRef<Path>>(mut self, path: P) -> anyhow::Result<Self> {

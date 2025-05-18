@@ -6,7 +6,6 @@ use bevy::{
     prelude::Component,
     reflect::Reflect,
 };
-use derive_more::Display;
 use serde::Deserialize;
 
 use crate::{ItemInstance, ItemInstanceId, ItemKind, ItemManager, utils::*};
@@ -67,8 +66,9 @@ impl ArmorSlots {
 #[derive(Component)]
 pub struct Player;
 
-#[derive(Component, Default, Debug, Hash, Clone, PartialEq, Eq)]
+#[derive(Component, Debug, Hash, Clone, PartialEq, Eq)]
 pub struct Npc {
+    pub id: NpcId,
     pub image: NpcImage,
     pub voice: NpcVoice,
 }
@@ -89,8 +89,10 @@ impl Default for NpcVoice {
     }
 }
 
-#[derive(Component, Debug, Display)]
-pub struct RpgEntityId(pub String);
+#[derive(
+    Debug, derive_more::Display, PartialEq, Eq, Deserialize, Clone, Hash, derive_more::From,
+)]
+pub struct NpcId(pub String);
 
 #[derive(Component, Debug)]
 pub struct RpgEntity {
@@ -178,6 +180,15 @@ impl RpgEntity {
 
     pub fn damage(&self) -> f32 {
         self.damage
+    }
+
+    // TODO: consider adding `Alive` and `Dead` resources to NPC bundles so you can query `With<Alive>`
+    pub fn is_alive(&self) -> bool {
+        self.health() > 0.0
+    }
+
+    pub fn is_dead(&self) -> bool {
+        !self.is_alive()
     }
 }
 

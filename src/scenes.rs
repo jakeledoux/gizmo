@@ -12,16 +12,11 @@ use bevy::{
 use serde::Deserialize;
 
 use crate::{
-    EndSceneEvent, NpcImage, NpcVoice, SceneCommandsEvent, SpawnNpcEvent, StartBattleEvent,
+    EndSceneEvent, NpcId, NpcImage, NpcVoice, SceneCommandsEvent, SpawnNpcEvent, StartBattleEvent,
 };
 
 #[allow(clippy::upper_case_acronyms)]
 type TODO = serde_json::Value;
-
-#[derive(
-    Deserialize, Debug, Hash, Clone, PartialEq, Eq, derive_more::From, derive_more::Display,
-)]
-pub struct CharacterId(String);
 
 #[derive(
     Deserialize, Debug, Hash, Clone, PartialEq, Eq, derive_more::From, derive_more::Display,
@@ -124,7 +119,7 @@ pub struct Dialogue {
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub struct Line {
-    pub from: CharacterId,
+    pub from: NpcId,
     #[serde(alias = "txt")]
     pub text: String,
     #[serde(flatten)]
@@ -212,7 +207,7 @@ impl Condition {
 #[serde(rename_all = "kebab-case")]
 #[serde(deny_unknown_fields)]
 pub struct SceneDefinitions {
-    characters: Option<HashMap<CharacterId, Character>>,
+    characters: Option<HashMap<NpcId, Character>>,
     vendors: Option<TODO>,
     quests: Option<TODO>,
 }
@@ -237,11 +232,11 @@ impl SceneDefinitions {
 #[serde(deny_unknown_fields)]
 pub struct SceneCommands {
     reward_gold: Option<RewardGoldCommand>,
-    update_characters: Option<HashMap<CharacterId, CharacterUpdate>>,
+    update_characters: Option<HashMap<NpcId, CharacterUpdate>>,
     scene_entry: Option<HashMap<SceneId, SceneSectionId>>,
     #[serde(alias = "vars")]
     variables: Option<HashMap<String, String>>,
-    battle: Option<TODO>,
+    battle: Option<NpcId>,
     kill_character: Option<TODO>,
     set_quest_stage: Option<TODO>,
     complete_quest: Option<TODO>,
@@ -265,8 +260,8 @@ impl SceneCommands {
             info!("updating variables: {variables:?}");
             scene_manager.update_variables(variables);
         }
-        if let Some(_battle) = self.battle {
-            start_battle_event.write(StartBattleEvent);
+        if let Some(battle) = self.battle {
+            start_battle_event.write(StartBattleEvent(battle));
         }
         // TODO: kill_character
         // TODO: set_quest_stage
@@ -278,7 +273,7 @@ impl SceneCommands {
 #[serde(deny_unknown_fields)]
 pub struct RewardGoldCommand {
     amount: u32,
-    from: CharacterId,
+    from: NpcId,
 }
 
 #[derive(Resource, Debug, Clone)]
@@ -370,8 +365,12 @@ impl ScenePlayer {
             scene_commands_events.write(SceneCommandsEvent(bookmark, commands));
         }
 
+        // continue dialog
+        if dialogue.lines.len() - 1 > self.current_line {
+            self.advance_line();
+        }
         // execute response
-        if let Some(response) = dialogue.responses.get(self.highlighted_response) {
+        else if let Some(response) = dialogue.responses.get(self.highlighted_response) {
             if let Some(commands) = response.commands.clone() {
                 let bookmark = SceneBookmark::new(
                     &self.scene,
@@ -388,13 +387,12 @@ impl ScenePlayer {
             } else {
                 end_scene_event.write(EndSceneEvent);
             }
-        }
-        // continue
-        else if dialogue.lines.len() - 1 > self.current_line {
-            self.advance_line();
+        // continue to next section
         } else if let Some(ref section) = dialogue.continue_to {
             self.set_key(section.to_owned())
-        } else {
+        }
+        // end scene
+        else {
             end_scene_event.write(EndSceneEvent);
         }
     }
@@ -446,6 +444,7 @@ impl ScenePlayer {
                     .add(1)
                     .min(dialogue.responses.len().saturating_sub(1));
             }
+            ScenePlayerInput::MoveTo(i) => self.highlighted_response = i,
             ScenePlayerInput::Select(i) => {
                 self.highlighted_response = i;
                 self.select(dialogue, end_scene_event, scene_commands_events);
@@ -477,6 +476,7 @@ impl ScenePlayer {
 pub enum ScenePlayerInput {
     MoveUp,
     MoveDown,
+    MoveTo(usize),
     Select(usize),
     SelectCurrent,
 }
@@ -499,7 +499,7 @@ impl SceneManager {
     }
 
     pub fn load_scene<P: AsRef<Path>>(&mut self, path: P) -> anyhow::Result<()> {
-        info!("attempting to item file: {:?}", path.as_ref());
+        info!("loading scene: {:?}", path.as_ref());
         let scene_json = std::fs::read_to_string(path)?;
         let scene: Scene = serde_json::from_str(&scene_json)?;
         self.scenes.insert(scene.id.clone(), scene);
