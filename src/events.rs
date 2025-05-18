@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    GameState, ItemManager, SceneBookmark, SceneCommands, SceneId, SceneManager, ScenePlayer,
-    components::*,
+    Character, CharacterId, GameState, ItemManager, SceneBookmark, SceneCommands, SceneId,
+    SceneManager, ScenePlayer, components::*, utils,
 };
 
 #[derive(Event)]
@@ -90,7 +90,7 @@ impl PlaySceneEvent {
         mut commands: Commands,
         scene_manager: Res<SceneManager>,
         mut play_scene_events: EventReader<PlaySceneEvent>,
-        entity_id_query: Query<&RpgEntityId>,
+        mut spawn_npc_event: EventWriter<SpawnNpcEvent>,
     ) {
         let play_scene_events = play_scene_events.read();
         if play_scene_events.len() > 1 {
@@ -98,7 +98,7 @@ impl PlaySceneEvent {
         }
         if let Some(play_scene_event) = play_scene_events.last() {
             if let Some(scene_player) =
-                scene_manager.play_scene(&mut commands, entity_id_query, play_scene_event.0.clone())
+                scene_manager.play_scene(play_scene_event.0.clone(), &mut spawn_npc_event)
             {
                 info!("playing scene: {:?}", play_scene_event.0);
                 commands.insert_resource(scene_player);
@@ -186,6 +186,26 @@ impl EndBattleEvent {
         if end_battle_events.count() > 0 {
             info!("ending battle! (not really)");
             commands.set_state(GameState::Map);
+        }
+    }
+}
+
+#[derive(Event)]
+pub struct SpawnNpcEvent(pub CharacterId, pub Character);
+
+impl SpawnNpcEvent {
+    pub fn handler(
+        mut commands: Commands,
+        entity_id_query: Query<&RpgEntityId>,
+        mut spawn_npc_events: EventReader<SpawnNpcEvent>,
+    ) {
+        for SpawnNpcEvent(id, character) in spawn_npc_events.read() {
+            utils::spawn_npc(
+                &mut commands,
+                entity_id_query,
+                id.to_string(),
+                character.clone(),
+            );
         }
     }
 }

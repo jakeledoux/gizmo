@@ -7,12 +7,12 @@ use std::{
 use bevy::{
     log::{error, info},
     platform::collections::HashMap,
-    prelude::{Commands, EventWriter, Query, Resource},
+    prelude::{EventWriter, Resource},
 };
 use serde::Deserialize;
 
 use crate::{
-    EndSceneEvent, NpcImage, NpcVoice, RpgEntityId, SceneCommandsEvent, StartBattleEvent, utils,
+    EndSceneEvent, NpcImage, NpcVoice, SceneCommandsEvent, SpawnNpcEvent, StartBattleEvent,
 };
 
 #[allow(clippy::upper_case_acronyms)]
@@ -217,16 +217,11 @@ pub struct SceneDefinitions {
     quests: Option<TODO>,
 }
 impl SceneDefinitions {
-    fn create(&self, commands: &mut Commands, entity_id_query: Query<&RpgEntityId>) {
+    fn create(&self, spawn_npc_event: &mut EventWriter<SpawnNpcEvent>) {
         if let Some(characters) = &self.characters {
-            characters.iter().for_each(|(character_id, character)| {
-                utils::spawn_npc(
-                    commands,
-                    entity_id_query,
-                    character_id.0.clone(),
-                    character.clone(),
-                );
-            });
+            for (character_id, character) in characters.iter() {
+                spawn_npc_event.write(SpawnNpcEvent(character_id.to_owned(), character.to_owned()));
+            }
         }
         if let Some(_vendors) = &self.vendors {
             todo!()
@@ -542,14 +537,11 @@ impl SceneManager {
 
     pub fn play_scene(
         &self,
-        commands: &mut Commands,
-        entity_id_query: Query<&RpgEntityId>,
         scene_id: SceneId,
+        spawn_npc_event: &mut EventWriter<SpawnNpcEvent>,
     ) -> Option<ScenePlayer> {
         self.scenes.contains_key(&scene_id).then(|| {
-            self.scenes[&scene_id]
-                .definitions
-                .create(commands, entity_id_query);
+            self.scenes[&scene_id].definitions.create(spawn_npc_event);
             let scene_entry = self.entries.get(&scene_id);
             ScenePlayer::new(scene_id, scene_entry.cloned())
         })

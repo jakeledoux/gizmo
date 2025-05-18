@@ -62,6 +62,7 @@ fn main() -> anyhow::Result<()> {
         .add_event::<SceneCommandsEvent>()
         .add_event::<StartBattleEvent>()
         .add_event::<EndBattleEvent>()
+        .add_event::<SpawnNpcEvent>()
         .configure_sets(
             Update,
             (
@@ -89,6 +90,8 @@ fn main() -> anyhow::Result<()> {
                 // battle events
                 StartBattleEvent::handler,
                 EndBattleEvent::handler,
+                // meta events
+                SpawnNpcEvent::handler,
             ),
         )
         // rendering
