@@ -26,6 +26,12 @@ pub struct CharacterId(String);
 )]
 pub struct SceneSectionId(String);
 
+impl Default for SceneSectionId {
+    fn default() -> Self {
+        Self("start".to_string())
+    }
+}
+
 #[derive(
     Deserialize, Debug, Hash, Clone, PartialEq, Eq, derive_more::From, derive_more::Display,
 )]
@@ -109,7 +115,7 @@ pub struct Dialogue {
     #[serde(alias = "resp", default)]
     responses: Vec<Response>,
     #[serde(flatten)]
-    commands: Option<SceneCommands>, // TODO: execute these?
+    commands: Option<SceneCommands>,
     #[serde(alias = "cont")]
     continue_to: Option<SceneSectionId>,
 }
@@ -121,7 +127,7 @@ pub struct Line {
     #[serde(alias = "txt")]
     pub text: String,
     #[serde(flatten)]
-    commands: Option<SceneCommands>, // TODO: execute these?
+    commands: Option<SceneCommands>,
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -132,7 +138,6 @@ pub struct Response {
     #[serde(alias = "lnk")]
     link: Option<SceneSectionId>,
     skill_check: Option<SkillCheck>,
-    // TODO:
     #[serde(alias = "cond", default)]
     conditions: Vec<Condition>,
     #[serde(flatten)]
@@ -184,7 +189,6 @@ pub enum Condition {
         #[serde(alias = "cond")]
         conditions: Vec<Condition>,
     },
-    // TODO
     HasItem,
     QuestStage,
 }
@@ -256,11 +260,10 @@ pub struct ScenePlayer {
 }
 
 impl ScenePlayer {
-    fn new(scene: SceneId) -> Self {
+    fn new(scene: SceneId, start_key: Option<SceneSectionId>) -> Self {
         Self {
             scene,
-            // TODO: load current_key from save
-            current_key: String::from("start").into(),
+            current_key: start_key.unwrap_or_default(),
             current_line: 0,
             highlighted_response: 0,
             executed_commands: HashSet::default(),
@@ -401,10 +404,7 @@ impl ScenePlayer {
         end_scene_event: &mut EventWriter<EndSceneEvent>,
         scene_commands_events: &mut EventWriter<SceneCommandsEvent>,
     ) {
-        // TODO: remove clone
-        let dialogue = self
-            .get_dialogue(scene_manager, scene_commands_events)
-            .clone();
+        let dialogue = self.get_dialogue(scene_manager, scene_commands_events);
         match input {
             ScenePlayerInput::MoveUp => {
                 self.highlighted_response = self.highlighted_response.saturating_sub(1);
@@ -417,10 +417,10 @@ impl ScenePlayer {
             }
             ScenePlayerInput::Select(i) => {
                 self.highlighted_response = i;
-                self.select(&dialogue, end_scene_event, scene_commands_events);
+                self.select(dialogue, end_scene_event, scene_commands_events);
             }
             ScenePlayerInput::Select(_) | ScenePlayerInput::SelectCurrent => {
-                self.select(&dialogue, end_scene_event, scene_commands_events);
+                self.select(dialogue, end_scene_event, scene_commands_events);
             }
         }
     }
@@ -506,12 +506,7 @@ impl SceneManager {
     pub fn play_scene(&self, scene: SceneId) -> Option<ScenePlayer> {
         self.scenes.contains_key(&scene).then(|| {
             let scene_entry = self.entries.get(&scene);
-            let mut scene_player = ScenePlayer::new(scene);
-            if let Some(key) = scene_entry {
-                scene_player.set_key(key.to_owned());
-            }
-
-            scene_player
+            ScenePlayer::new(scene, scene_entry.cloned())
         })
     }
 
