@@ -132,7 +132,7 @@ pub struct SceneCommandsEvent(pub SceneBookmark, pub SceneCommands);
 
 impl SceneCommandsEvent {
     pub fn handler(
-        mut scene_player: Option<ResMut<ScenePlayer>>,
+        scene_player: Option<ResMut<ScenePlayer>>,
         mut scene_manager: ResMut<SceneManager>,
         mut scene_commands_events: EventReader<SceneCommandsEvent>,
     ) {

@@ -1,4 +1,5 @@
 #![allow(unused)]
+#![warn(unused_mut, unused_variables, unused_imports)]
 
 mod components;
 mod events;
@@ -10,16 +11,16 @@ mod utils;
 
 use std::path::Path;
 
-use bevy::{app::ScheduleRunnerPlugin, input::InputPlugin, prelude::*, state::app::StatesPlugin};
+use bevy::prelude::*;
 use bevy_egui::{EguiContextPass, EguiContexts, EguiPlugin};
 
-use components::*;
-use events::*;
-use items::*;
-use scenes::*;
-use systems::*;
-use ui::*;
-use utils::*;
+pub use components::*;
+pub use events::*;
+pub use items::*;
+pub use scenes::*;
+pub use systems::*;
+pub use ui::*;
+pub use utils::*;
 
 // TODO: use bevy asset loader somehow
 #[cfg(debug_assertions)]
@@ -99,8 +100,8 @@ fn setup(
     mut commands: Commands,
     mut item_manager: ResMut<ItemManager>,
     mut scene_manager: ResMut<SceneManager>,
-    mut play_scene_events: EventWriter<PlaySceneEvent>,
-    mut server: Res<AssetServer>,
+    play_scene_events: EventWriter<PlaySceneEvent>,
+    server: Res<AssetServer>,
 ) {
     commands.spawn(Camera2d);
 
@@ -134,7 +135,7 @@ fn debug_quit_immediately(mut exit_event: EventWriter<AppExit>) {
 }
 
 fn ui_system(
-    mut contexts: EguiContexts,
+    contexts: EguiContexts,
     game_state: Res<State<GameState>>,
     mut scene_manager: ResMut<SceneManager>,
     mut scene_player: Option<ResMut<ScenePlayer>>,
