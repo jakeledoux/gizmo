@@ -17,12 +17,21 @@ pub fn dialogue_ui(
     scene_player: &mut ScenePlayer,
     scene_manager: &mut SceneManager,
     scene_commands_events: &mut EventWriter<SceneCommandsEvent>,
+    npc_query: Query<(&Npc, &RpgEntity)>,
 ) -> Option<ScenePlayerInput> {
     let mut scene_player_input = None;
     let Some(UiScenePart { line, responses }) =
         scene_player.get_current(scene_manager, scene_commands_events)
     else {
         return Some(ScenePlayerInput::SelectCurrent);
+    };
+
+    let Some((_speaker_npc, speaker_rpg_entity)) = npc_query
+        .iter()
+        .find(|(npc, _rpg_entity)| npc.id == line.from)
+    else {
+        error!("failed to get speaker NPC!");
+        return None;
     };
 
     Window::new("Dialogue")
@@ -44,8 +53,7 @@ pub fn dialogue_ui(
                     // left side: name and dialogue
                     ui.vertical(|ui| {
                         ui.label(
-                            // TODO: query character name instead of showing ID
-                            RichText::new(line.from.to_string())
+                            RichText::new(speaker_rpg_entity.name())
                                 .text_style(TextStyle::Heading)
                                 .color(Color32::WHITE),
                         );
@@ -59,7 +67,7 @@ pub fn dialogue_ui(
                     // right: speaker image
                     let image_size = egui::vec2(100.0, 60.0);
                     // TODO: get character image from character query
-                    ui.add_sized(image_size, Label::new("<image here>"))
+                    ui.add_sized(image_size, Label::new("<image here>"));
                 });
 
                 // response row

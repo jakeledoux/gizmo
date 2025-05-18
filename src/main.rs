@@ -118,6 +118,7 @@ fn register_events(app: &mut App) {
         .add_event::<StartBattleEvent>()
         .add_event::<EndBattleEvent>()
         .add_event::<SpawnNpcEvent>()
+        .add_event::<UpdateNpcEvent>()
         .add_systems(
             Update,
             (
@@ -134,15 +135,18 @@ fn register_events(app: &mut App) {
                 EndBattleEvent::handler,
                 // meta events
                 SpawnNpcEvent::handler,
+                UpdateNpcEvent::handler,
             ),
         );
 }
 
 fn setup(
     mut commands: Commands,
+    server: ResMut<AssetServer>,
     mut item_manager: ResMut<ItemManager>,
     mut scene_manager: ResMut<SceneManager>,
     mut state_manager: ResMut<StateManager>,
+    mut play_scene_event: EventWriter<PlaySceneEvent>,
 ) {
     commands.spawn(Camera2d);
     // value for text input for selecting scenes
@@ -157,9 +161,13 @@ fn setup(
     if let Err(e) = scene_manager.load_folder(Path::new(ASSETS_PATH).join("scenes")) {
         warn!("could not load scene: {e}")
     };
+    server.load_folder(Path::new(ASSETS_PATH).join("images"));
 
     // spawn player
     utils::spawn_player(&mut commands, &item_manager, "Jake", &["dragonbone-sword"]);
+
+    // debug: start drugs demo immediately
+    play_scene_event.write(PlaySceneEvent(SceneId("drugs-demo".to_string())));
 }
 
 #[derive(Resource, Default)]
@@ -220,6 +228,7 @@ fn ui_system(
                 scene_player,
                 &mut scene_manager,
                 scene_command_event,
+                npc_query,
             ) {
                 scene_player.input(
                     input,

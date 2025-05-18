@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    Battle, Character, GameState, ItemManager, SceneBookmark, SceneCommands, SceneId, SceneManager,
-    ScenePlayer, StateManager, components::*, utils,
+    Battle, Character, CharacterUpdate, GameState, ItemManager, SceneBookmark, SceneCommands,
+    SceneId, SceneManager, ScenePlayer, StateManager, components::*, utils,
 };
 
 #[derive(Event)]
@@ -138,6 +138,7 @@ impl SceneCommandsEvent {
         mut scene_manager: ResMut<SceneManager>,
         mut scene_commands_events: EventReader<SceneCommandsEvent>,
         mut start_battle_event: EventWriter<StartBattleEvent>,
+        mut update_npc_event: EventWriter<UpdateNpcEvent>,
     ) {
         let Some(mut scene_player) = scene_player else {
             // if no scene is currently playing then we shouldn't have any events to handle.
@@ -156,6 +157,7 @@ impl SceneCommandsEvent {
                 commands.to_owned(),
                 &mut scene_manager,
                 &mut start_battle_event,
+                &mut update_npc_event,
             );
         }
     }
@@ -221,11 +223,50 @@ impl SpawnNpcEvent {
         npc_query: Query<&Npc>,
         mut spawn_npc_events: EventReader<SpawnNpcEvent>,
     ) {
-        for SpawnNpcEvent(id, character) in spawn_npc_events.read() {
-            if utils::spawn_npc(&mut commands, npc_query, id.to_owned(), character.clone()) {
-                info!("spawned NPC: {id:?}");
+        for SpawnNpcEvent(npc_id, character) in spawn_npc_events.read() {
+            if utils::spawn_npc(
+                &mut commands,
+                npc_query,
+                npc_id.to_owned(),
+                character.clone(),
+            ) {
+                info!("spawned NPC: {npc_id:?}");
             } else {
-                info!("skipped spawning NPC: {id:?}");
+                info!("skipped spawning NPC: {npc_id:?}");
+            }
+        }
+    }
+}
+
+#[derive(Event)]
+pub struct UpdateNpcEvent(pub NpcId, pub CharacterUpdate);
+
+impl UpdateNpcEvent {
+    pub fn handler(
+        mut mutable_npc_query: Query<(&mut Npc, &mut RpgEntity)>,
+        mut update_npc_events: EventReader<UpdateNpcEvent>,
+    ) {
+        for UpdateNpcEvent(npc_id, character_update) in update_npc_events.read() {
+            if let Some((mut npc, mut rpg_entity)) = mutable_npc_query
+                .iter_mut()
+                .find(|(npc, _rpg_entity)| &npc.id == npc_id)
+            {
+                info!("updating: {npc_id:?} ...");
+                if let Some(new_image) = &character_update.image {
+                    info!("    updated image to: {new_image:?}");
+                    npc.image.0 = new_image.clone();
+                }
+                if let Some(new_name) = &character_update.name {
+                    info!("    updated name to: {new_name:?}");
+                    rpg_entity.set_name(new_name.clone());
+                }
+                if let Some(new_voice) = &character_update.voice {
+                    info!("    updated voice to: {new_voice:?}");
+                    npc.voice.0 = new_voice.clone();
+                }
+                info!("...done.");
+            } else {
+                error!("unable to update NPC: Could not find NPC with ID: {npc_id:?}")
             }
         }
     }

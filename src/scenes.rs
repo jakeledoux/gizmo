@@ -13,6 +13,7 @@ use serde::Deserialize;
 
 use crate::{
     EndSceneEvent, NpcId, NpcImage, NpcVoice, SceneCommandsEvent, SpawnNpcEvent, StartBattleEvent,
+    UpdateNpcEvent,
 };
 
 #[allow(clippy::upper_case_acronyms)]
@@ -98,9 +99,9 @@ impl Default for Character {
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct CharacterUpdate {
-    name: Option<String>,
-    image: Option<PathBuf>,
-    voice: Option<String>,
+    pub name: Option<String>,
+    pub image: Option<PathBuf>,
+    pub voice: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -247,9 +248,14 @@ impl SceneCommands {
         self,
         scene_manager: &mut SceneManager,
         start_battle_event: &mut EventWriter<StartBattleEvent>,
+        update_npc_event: &mut EventWriter<UpdateNpcEvent>,
     ) {
         // TODO: reward_gold
-        // TODO: update_characters
+        if let Some(update_characters) = self.update_characters {
+            for (npc_id, character_update) in update_characters {
+                update_npc_event.write(UpdateNpcEvent(npc_id, character_update));
+            }
+        }
         if let Some(scene_entry) = self.scene_entry {
             info!("updating scene entry points: {scene_entry:?}");
             scene_entry.into_iter().for_each(|(scene, key)| {
@@ -465,9 +471,10 @@ impl ScenePlayer {
         commands: SceneCommands,
         scene_manager: &mut SceneManager,
         start_battle_event: &mut EventWriter<StartBattleEvent>,
+        update_npc_event: &mut EventWriter<UpdateNpcEvent>,
     ) {
         if self.executed_commands.insert(bookmark) {
-            commands.execute(scene_manager, start_battle_event);
+            commands.execute(scene_manager, start_battle_event, update_npc_event);
         }
     }
 }

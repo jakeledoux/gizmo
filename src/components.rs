@@ -70,15 +70,15 @@ pub struct Npc {
 }
 
 #[derive(Component, Debug, Hash, Clone, PartialEq, Eq, Deserialize)]
-pub struct NpcImage(PathBuf);
+pub struct NpcImage(pub PathBuf);
 impl Default for NpcImage {
     fn default() -> Self {
-        Self("images/default.png".into())
+        Self("images/mysterious.png".into())
     }
 }
 
 #[derive(Component, Debug, Hash, Clone, PartialEq, Eq, Deserialize)]
-pub struct NpcVoice(PathBuf);
+pub struct NpcVoice(pub String);
 impl Default for NpcVoice {
     fn default() -> Self {
         Self("default".into())
@@ -114,6 +114,10 @@ impl RpgEntity {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub fn set_name(&mut self, name: String) {
+        self.name = name
     }
 
     pub fn equip(&mut self, instance_id: ItemInstanceId) -> bool {
