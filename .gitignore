@@ -2,7 +2,7 @@
 /target
 
 # macos
-.DS_Store
+**/.DS_Store
 
 # general
 .bak

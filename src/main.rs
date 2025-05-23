@@ -4,8 +4,11 @@
 mod components;
 mod events;
 mod items;
+mod maps;
 mod scenes;
+mod static_commands;
 mod systems;
+mod types;
 mod ui;
 mod utils;
 
@@ -17,8 +20,11 @@ use bevy_egui::{EguiContextPass, EguiContexts, EguiPlugin};
 pub use components::*;
 pub use events::*;
 pub use items::*;
+pub use maps::*;
 pub use scenes::*;
+pub use static_commands::*;
 pub use systems::*;
+pub use types::*;
 pub use ui::*;
 pub use utils::*;
 
@@ -89,6 +95,7 @@ fn main() -> anyhow::Result<()> {
     .insert_state(state_manager.get().expect("state exists."))
     .insert_resource(state_manager)
     .insert_resource(ItemManager::new())
+    .insert_resource(MapManager::new())
     .insert_resource(SceneManager::new())
     .configure_sets(
         Update,
@@ -114,7 +121,7 @@ fn register_events(app: &mut App) {
         .add_event::<DeathEvent>()
         .add_event::<PlaySceneEvent>()
         .add_event::<EndSceneEvent>()
-        .add_event::<SceneCommandsEvent>()
+        .add_event::<StaticCommandsEvent>()
         .add_event::<StartBattleEvent>()
         .add_event::<EndBattleEvent>()
         .add_event::<SpawnNpcEvent>()
@@ -129,7 +136,7 @@ fn register_events(app: &mut App) {
                 // scene events
                 PlaySceneEvent::handler,
                 EndSceneEvent::handler,
-                SceneCommandsEvent::handler.before(EndSceneEvent::handler),
+                StaticCommandsEvent::handler.before(EndSceneEvent::handler),
                 // battle events
                 StartBattleEvent::handler,
                 EndBattleEvent::handler,
@@ -142,11 +149,11 @@ fn register_events(app: &mut App) {
 
 fn setup(
     mut commands: Commands,
-    server: ResMut<AssetServer>,
+    // server: ResMut<AssetServer>,
     mut item_manager: ResMut<ItemManager>,
+    mut map_manager: ResMut<MapManager>,
     mut scene_manager: ResMut<SceneManager>,
     mut state_manager: ResMut<StateManager>,
-    mut play_scene_event: EventWriter<PlaySceneEvent>,
 ) {
     commands.spawn(Camera2d);
     // value for text input for selecting scenes
@@ -158,16 +165,16 @@ fn setup(
     if let Err(e) = item_manager.load_folder(Path::new(ASSETS_PATH).join("items")) {
         warn!("could not load items: {e}")
     };
+    if let Err(e) = map_manager.load_folder(Path::new(ASSETS_PATH).join("maps")) {
+        warn!("could not load maps: {e}")
+    };
     if let Err(e) = scene_manager.load_folder(Path::new(ASSETS_PATH).join("scenes")) {
         warn!("could not load scene: {e}")
     };
-    server.load_folder(Path::new(ASSETS_PATH).join("images"));
+    // server.load_folder(Path::new(ASSETS_PATH).join("images"));
 
     // spawn player
     utils::spawn_player(&mut commands, &item_manager, "Jake", &["dragonbone-sword"]);
-
-    // debug: start drugs demo immediately
-    play_scene_event.write(PlaySceneEvent(SceneId("drugs-demo".to_string())));
 }
 
 #[derive(Resource, Default)]
@@ -187,7 +194,7 @@ fn ui_system(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut play_scene_event: EventWriter<PlaySceneEvent>,
     mut end_scene_event: EventWriter<EndSceneEvent>,
-    mut scene_command_event: EventWriter<SceneCommandsEvent>,
+    mut static_command_event: EventWriter<StaticCommandsEvent>,
     mut attack_event: EventWriter<AttackEvent>,
     mut end_battle_event: EventWriter<EndBattleEvent>,
     mut debug_new_scene_id: ResMut<DebugPlaySceneId>,
@@ -198,7 +205,7 @@ fn ui_system(
 ) {
     let play_scene_event = &mut play_scene_event;
     let end_scene_event = &mut end_scene_event;
-    let scene_command_event = &mut scene_command_event;
+    let static_command_event = &mut static_command_event;
 
     if DEBUG {
         debug_ui(
@@ -227,14 +234,14 @@ fn ui_system(
                 contexts.ctx_mut(),
                 scene_player,
                 &mut scene_manager,
-                scene_command_event,
+                static_command_event,
                 npc_query,
             ) {
                 scene_player.input(
                     input,
                     &mut scene_manager,
                     end_scene_event,
-                    scene_command_event,
+                    static_command_event,
                 )
             }
 
@@ -245,7 +252,7 @@ fn ui_system(
                     ScenePlayerInput::MoveUp,
                     &mut scene_manager,
                     end_scene_event,
-                    scene_command_event,
+                    static_command_event,
                 )
             }
             if keyboard_input.just_pressed(KeyCode::KeyS)
@@ -255,7 +262,7 @@ fn ui_system(
                     ScenePlayerInput::MoveDown,
                     &mut scene_manager,
                     end_scene_event,
-                    scene_command_event,
+                    static_command_event,
                 )
             }
             if keyboard_input.just_pressed(KeyCode::KeyE)
@@ -265,7 +272,7 @@ fn ui_system(
                     ScenePlayerInput::SelectCurrent,
                     &mut scene_manager,
                     end_scene_event,
-                    scene_command_event,
+                    static_command_event,
                 )
             }
         }

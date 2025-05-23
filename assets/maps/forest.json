@@ -1,0 +1,110 @@
+{
+  "id": "forest",
+  "music": "dusk_at_the_market",
+  "quests": {
+    "lost-treasure": {
+      "name": "Lost Treasure",
+      "on-complete": {
+        "reward-experience": {
+          "amount": 4000
+        }
+      },
+      "stages": [
+        {
+          "desc": "Locate and retrieve %Jacob%'s treasure."
+        },
+        {
+          "desc": "Return %Jacob%'s treasure."
+        }
+      ]
+    }
+  },
+  "layers": {
+    "ground": "maps/forest_ground.png",
+    "base": "maps/forest.png",
+    "sky": "maps/forest_sky.png"
+  },
+  "player-pos": {
+    "x": 12,
+    "y": 0
+  },
+  "actions": [
+    {
+      "pos-range": {
+        "start": {
+          "x": 5,
+          "y": 5
+        },
+        "end": {
+          "x": 7,
+          "y": 7
+        }
+      },
+      "name": "Tough Guy Terrance",
+      "play-scene": "scenes/terrance.yml",
+      "cond": [
+        {
+          "type": "is-alive",
+          "entity": "terrance"
+        }
+      ]
+    },
+    {
+      "pos-range": {
+        "start": {
+          "x": 5,
+          "y": 5
+        },
+        "end": {
+          "x": 7,
+          "y": 7
+        }
+      },
+      "name": "Tough Guy Terrance's Body",
+      "start-loot": "terrance",
+      "cond": [
+        {
+          "type": "is-dead",
+          "entity": "terrance"
+        }
+      ]
+    },
+    {
+      "pos": {
+        "x": 20,
+        "y": 8
+      },
+      "name": "Jacob's House",
+      "play-scene": "scenes/jake.yml"
+    },
+    {
+      "pos": {
+        "x": 4,
+        "y": 22
+      },
+      "name": "Hole",
+      "action-prefix": "inspect",
+      "play-scene": "scenes/forest_hole.yml"
+    },
+    {
+      "pos-range": {
+        "start": {
+          "x": 11,
+          "y": 0
+        },
+        "end": {
+          "x": 13,
+          "y": 0
+        }
+      },
+      "name": "The Village",
+      "open-map": {
+        "map": "maps/village.yml",
+        "start-pos": {
+          "x": 12,
+          "y": 27
+        }
+      }
+    }
+  ]
+}

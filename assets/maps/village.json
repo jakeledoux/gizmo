@@ -1,0 +1,222 @@
+{
+  "id": "village",
+  "music": "dusk_at_the_market",
+  "layers": {
+    "ground": "maps/village_ground.png",
+    "base": "maps/village.png"
+  },
+  "vendors": {
+    "ye-old-store": {
+      "name": "Ye Old Store",
+      "music": "sunrise_of_flutes",
+      "daily_gold": 500,
+      "item_count": 10,
+      "item_rarity": "common"
+    }
+  },
+  "quests": {
+    "debug": {
+      "name": "Debug!",
+      "stages": [
+        {
+          "desc": "Debug the game"
+        },
+        {
+          "desc": "???"
+        },
+        {
+          "desc": "Profit"
+        }
+      ]
+    }
+  },
+  "player-pos": {
+    "x": 17,
+    "y": 7
+  },
+  "actions": [
+    {
+      "pos": {
+        "x": 16,
+        "y": 7
+      },
+      "name": "Activate quest",
+      "cond": [
+        {
+          "type": "debug"
+        }
+      ],
+      "start-quest": "debug"
+    },
+    {
+      "pos": {
+        "x": 15,
+        "y": 7
+      },
+      "name": "Progress quest",
+      "cond": [
+        {
+          "type": "debug"
+        }
+      ],
+      "set-quest-stage": {
+        "quest": "debug",
+        "stage": 1
+      }
+    },
+    {
+      "pos": {
+        "x": 17,
+        "y": 7
+      },
+      "name": "XP small",
+      "cond": [
+        {
+          "type": "debug"
+        }
+      ],
+      "reward-experience": {
+        "amount": 100
+      }
+    },
+    {
+      "pos": {
+        "x": 17,
+        "y": 8
+      },
+      "name": "XP med",
+      "cond": [
+        {
+          "type": "debug"
+        }
+      ],
+      "reward-experience": {
+        "amount": 1000
+      }
+    },
+    {
+      "pos": {
+        "x": 17,
+        "y": 9
+      },
+      "name": "XP large",
+      "cond": [
+        {
+          "type": "debug"
+        }
+      ],
+      "reward-experience": {
+        "amount": 10000
+      }
+    },
+    {
+      "pos": {
+        "x": 18,
+        "y": 7
+      },
+      "name": "DEBUG MARIO",
+      "play-scene": "scenes/mario.yml"
+    },
+    {
+      "pos-range": {
+        "start": {
+          "x": 1,
+          "y": 15
+        },
+        "end": {
+          "x": 2,
+          "y": 17
+        }
+      },
+      "name": "Mario",
+      "play-scene": "scenes/mario.yml",
+      "cond": [
+        {
+          "type": "is-alive",
+          "entity": "mario"
+        }
+      ]
+    },
+    {
+      "pos-range": {
+        "start": {
+          "x": 1,
+          "y": 15
+        },
+        "end": {
+          "x": 2,
+          "y": 17
+        }
+      },
+      "name": "Mario's Corpse",
+      "start-loot": "mario-corpse",
+      "cond": [
+        {
+          "type": "is-dead",
+          "entity": "mario"
+        }
+      ]
+    },
+    {
+      "pos": {
+        "x": 9,
+        "y": 8
+      },
+      "name": "Ye Old Store",
+      "start-trade": "ye-old-store"
+    },
+    {
+      "pos": {
+        "x": 4,
+        "y": 8
+      },
+      "name": "Ye Old Store Backdoor",
+      "start-loot": "ye-old-store",
+      "lock": "ye-old-store-backdoor"
+    },
+    {
+      "pos": {
+        "x": 6,
+        "y": 12
+      },
+      "name": "Ye Old Store Backdoor Key",
+      "reward-item": "ye-old-store-key"
+    },
+    {
+      "pos": {
+        "x": 18,
+        "y": 14
+      },
+      "name": "Old Lady Tabernacle's House",
+      "play-scene": "scenes/tabernacle.yml"
+    },
+    {
+      "pos": {
+        "x": 14,
+        "y": 17
+      },
+      "name": "Mike's Place: A Place for Mikes",
+      "play-scene": "scenes/mike.yml"
+    },
+    {
+      "pos-range": {
+        "start": {
+          "x": 11,
+          "y": 27
+        },
+        "end": {
+          "x": 13,
+          "y": 27
+        }
+      },
+      "name": "The Forest",
+      "open-map": {
+        "map": "maps/forest.yml",
+        "start-pos": {
+          "x": 12,
+          "y": 0
+        }
+      }
+    }
+  ]
+}

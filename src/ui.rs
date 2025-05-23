@@ -9,14 +9,14 @@ use bevy_egui::egui::{
 
 use crate::{
     AttackEvent, Battle, EndBattleEvent, ItemManager, Npc, PlaySceneEvent, Player, RpgEntity,
-    SceneCommandsEvent, SceneManager, ScenePlayer, ScenePlayerInput, UiScenePart,
+    SceneManager, ScenePlayer, ScenePlayerInput, StaticCommandsEvent, UiScenePart,
 };
 
 pub fn dialogue_ui(
     ctx: &mut Context,
     scene_player: &mut ScenePlayer,
     scene_manager: &mut SceneManager,
-    scene_commands_events: &mut EventWriter<SceneCommandsEvent>,
+    scene_commands_events: &mut EventWriter<StaticCommandsEvent>,
     npc_query: Query<(&Npc, &RpgEntity)>,
 ) -> Option<ScenePlayerInput> {
     let mut scene_player_input = None;

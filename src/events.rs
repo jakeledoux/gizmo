@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    Battle, Character, CharacterUpdate, GameState, ItemManager, SceneBookmark, SceneCommands,
-    SceneId, SceneManager, ScenePlayer, StateManager, components::*, utils,
+    Battle, Character, CharacterUpdate, GameState, ItemManager, SceneBookmark, SceneId,
+    SceneManager, ScenePlayer, StateManager, StaticCommands, components::*, utils,
 };
 
 #[derive(Event)]
@@ -130,13 +130,13 @@ impl EndSceneEvent {
 }
 
 #[derive(Event)]
-pub struct SceneCommandsEvent(pub SceneBookmark, pub SceneCommands);
+pub struct StaticCommandsEvent(pub SceneBookmark, pub StaticCommands);
 
-impl SceneCommandsEvent {
+impl StaticCommandsEvent {
     pub fn handler(
         scene_player: Option<ResMut<ScenePlayer>>,
         mut scene_manager: ResMut<SceneManager>,
-        mut scene_commands_events: EventReader<SceneCommandsEvent>,
+        mut static_commands_events: EventReader<StaticCommandsEvent>,
         mut start_battle_event: EventWriter<StartBattleEvent>,
         mut update_npc_event: EventWriter<UpdateNpcEvent>,
     ) {
@@ -146,11 +146,11 @@ impl SceneCommandsEvent {
             // there could potentially be an issue here if the scene is exited
             // before the final commands are executed. if that happens then this
             // handler should be set to run before the sceen exit handler.
-            assert_eq!(scene_commands_events.len(), 0);
+            assert_eq!(static_commands_events.len(), 0);
             return;
         };
 
-        for SceneCommandsEvent(bookmark, commands) in scene_commands_events.read() {
+        for StaticCommandsEvent(bookmark, commands) in static_commands_events.read() {
             // TODO: I'd like to avoid cloning these
             scene_player.execute(
                 bookmark.to_owned(),

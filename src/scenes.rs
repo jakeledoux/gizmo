@@ -1,8 +1,4 @@
-use std::{
-    collections::HashSet,
-    ops::Add,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashSet, ops::Add, path::Path};
 
 use bevy::{
     log::{error, info},
@@ -12,12 +8,9 @@ use bevy::{
 use serde::Deserialize;
 
 use crate::{
-    EndSceneEvent, NpcId, NpcImage, NpcVoice, SceneCommandsEvent, SpawnNpcEvent, StartBattleEvent,
-    UpdateNpcEvent,
+    Definitions, EndSceneEvent, NpcId, NpcImage, NpcVoice, SpawnNpcEvent, StartBattleEvent,
+    StaticCommands, StaticCommandsEvent, UpdateNpcEvent,
 };
-
-#[allow(clippy::upper_case_acronyms)]
-type TODO = serde_json::Value;
 
 #[derive(
     Deserialize, Debug, Hash, Clone, PartialEq, Eq, derive_more::From, derive_more::Display,
@@ -72,10 +65,10 @@ pub struct Scene {
     id: SceneId,
     music: Option<String>,
     #[serde(flatten)]
-    definitions: SceneDefinitions,
+    definitions: Definitions,
     dialogue: HashMap<SceneSectionId, Dialogue>,
     #[serde(flatten)]
-    commands: Option<SceneCommands>, // TODO: execute these?
+    commands: Option<StaticCommands>, // TODO: execute these?
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -98,13 +91,6 @@ impl Default for Character {
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct CharacterUpdate {
-    pub name: Option<String>,
-    pub image: Option<PathBuf>,
-    pub voice: Option<String>,
-}
-
-#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub struct Dialogue {
     #[serde(default)]
@@ -112,7 +98,7 @@ pub struct Dialogue {
     #[serde(alias = "resp", default)]
     responses: Vec<Response>,
     #[serde(flatten)]
-    commands: Option<SceneCommands>,
+    commands: Option<StaticCommands>,
     #[serde(alias = "cont")]
     continue_to: Option<SceneSectionId>,
 }
@@ -124,7 +110,7 @@ pub struct Line {
     #[serde(alias = "txt")]
     pub text: String,
     #[serde(flatten)]
-    commands: Option<SceneCommands>,
+    commands: Option<StaticCommands>,
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -138,7 +124,7 @@ pub struct Response {
     #[serde(alias = "cond", default)]
     conditions: Vec<Condition>,
     #[serde(flatten)]
-    commands: Option<SceneCommands>,
+    commands: Option<StaticCommands>,
 }
 impl Response {
     fn evaluate_conditions(&self, scene_manager: &SceneManager) -> bool {
@@ -204,84 +190,6 @@ impl Condition {
     }
 }
 
-#[derive(Deserialize, Debug, Clone, PartialEq, Eq, derive_more::From)]
-#[serde(rename_all = "kebab-case")]
-#[serde(deny_unknown_fields)]
-pub struct SceneDefinitions {
-    characters: Option<HashMap<NpcId, Character>>,
-    vendors: Option<TODO>,
-    quests: Option<TODO>,
-}
-impl SceneDefinitions {
-    fn create(&self, spawn_npc_event: &mut EventWriter<SpawnNpcEvent>) {
-        if let Some(characters) = &self.characters {
-            for (character_id, character) in characters.iter() {
-                spawn_npc_event.write(SpawnNpcEvent(character_id.to_owned(), character.to_owned()));
-            }
-        }
-        if let Some(_vendors) = &self.vendors {
-            todo!()
-        }
-        if let Some(_quests) = &self.quests {
-            todo!()
-        }
-    }
-}
-
-#[derive(Deserialize, Debug, Clone, PartialEq, Eq, derive_more::From)]
-#[serde(rename_all = "kebab-case")]
-#[serde(deny_unknown_fields)]
-pub struct SceneCommands {
-    reward_gold: Option<RewardGoldCommand>,
-    update_characters: Option<HashMap<NpcId, CharacterUpdate>>,
-    scene_entry: Option<HashMap<SceneId, SceneSectionId>>,
-    #[serde(alias = "vars")]
-    variables: Option<HashMap<String, String>>,
-    battle: Option<NpcId>,
-    kill_character: Option<TODO>,
-    set_quest_stage: Option<TODO>,
-    complete_quest: Option<TODO>,
-}
-
-impl SceneCommands {
-    pub fn execute(
-        self,
-        scene_manager: &mut SceneManager,
-        start_battle_event: &mut EventWriter<StartBattleEvent>,
-        update_npc_event: &mut EventWriter<UpdateNpcEvent>,
-    ) {
-        // TODO: reward_gold
-        if let Some(update_characters) = self.update_characters {
-            for (npc_id, character_update) in update_characters {
-                update_npc_event.write(UpdateNpcEvent(npc_id, character_update));
-            }
-        }
-        if let Some(scene_entry) = self.scene_entry {
-            info!("updating scene entry points: {scene_entry:?}");
-            scene_entry.into_iter().for_each(|(scene, key)| {
-                scene_manager.update_scene_entry(scene, key);
-            });
-        }
-        if let Some(variables) = self.variables {
-            info!("updating variables: {variables:?}");
-            scene_manager.update_variables(variables);
-        }
-        if let Some(battle) = self.battle {
-            start_battle_event.write(StartBattleEvent(battle));
-        }
-        // TODO: kill_character
-        // TODO: set_quest_stage
-        // TODO: complete_quest
-    }
-}
-
-#[derive(Deserialize, Debug, Clone, PartialEq, Eq, derive_more::From)]
-#[serde(deny_unknown_fields)]
-pub struct RewardGoldCommand {
-    amount: u32,
-    from: NpcId,
-}
-
 #[derive(Resource, Debug, Clone)]
 pub struct ScenePlayer {
     scene: SceneId,
@@ -311,7 +219,7 @@ impl ScenePlayer {
     fn get_dialogue<'a>(
         &self,
         scene_manager: &'a SceneManager,
-        scene_commands_events: &mut EventWriter<SceneCommandsEvent>,
+        scene_commands_events: &mut EventWriter<StaticCommandsEvent>,
     ) -> &'a Dialogue {
         let scene = self.get_scene(scene_manager);
         let Some(dialogue) = scene.dialogue.get(&self.current_key) else {
@@ -323,7 +231,7 @@ impl ScenePlayer {
 
         if let Some(commands) = dialogue.commands.clone() {
             let bookmark = SceneBookmark::new(&self.scene, Some(&self.current_key), None, None);
-            scene_commands_events.write(SceneCommandsEvent(bookmark, commands));
+            scene_commands_events.write(StaticCommandsEvent(bookmark, commands));
         }
 
         dialogue
@@ -348,7 +256,7 @@ impl ScenePlayer {
         &mut self,
         dialogue: &Dialogue,
         end_scene_event: &mut EventWriter<EndSceneEvent>,
-        scene_commands_events: &mut EventWriter<SceneCommandsEvent>,
+        scene_commands_events: &mut EventWriter<StaticCommandsEvent>,
     ) {
         if dialogue.lines.is_empty() {
             end_scene_event.write(EndSceneEvent);
@@ -368,7 +276,7 @@ impl ScenePlayer {
                 Some(self.current_line),
                 None,
             );
-            scene_commands_events.write(SceneCommandsEvent(bookmark, commands));
+            scene_commands_events.write(StaticCommandsEvent(bookmark, commands));
         }
 
         // continue dialog
@@ -384,7 +292,7 @@ impl ScenePlayer {
                     None,
                     Some(self.highlighted_response),
                 );
-                scene_commands_events.write(SceneCommandsEvent(bookmark, commands));
+                scene_commands_events.write(StaticCommandsEvent(bookmark, commands));
             }
 
             // TODO: skill check, etc.
@@ -406,7 +314,7 @@ impl ScenePlayer {
     pub fn get_current<'a>(
         &'a self,
         scene_manager: &'a SceneManager,
-        scene_commands_events: &mut EventWriter<SceneCommandsEvent>,
+        scene_commands_events: &mut EventWriter<StaticCommandsEvent>,
     ) -> Option<UiScenePart<'a>> {
         let dialogue = self.get_dialogue(scene_manager, scene_commands_events);
         // some dialogues exist only to run commands and exit
@@ -437,7 +345,7 @@ impl ScenePlayer {
         input: ScenePlayerInput,
         scene_manager: &mut SceneManager,
         end_scene_event: &mut EventWriter<EndSceneEvent>,
-        scene_commands_events: &mut EventWriter<SceneCommandsEvent>,
+        scene_commands_events: &mut EventWriter<StaticCommandsEvent>,
     ) {
         let dialogue = self.get_dialogue(scene_manager, scene_commands_events);
         match input {
@@ -468,7 +376,7 @@ impl ScenePlayer {
     pub fn execute(
         &mut self,
         bookmark: SceneBookmark,
-        commands: SceneCommands,
+        commands: StaticCommands,
         scene_manager: &mut SceneManager,
         start_battle_event: &mut EventWriter<StartBattleEvent>,
         update_npc_event: &mut EventWriter<UpdateNpcEvent>,
@@ -554,7 +462,7 @@ impl SceneManager {
         })
     }
 
-    fn update_variables<U>(&mut self, variables: U)
+    pub(crate) fn update_variables<U>(&mut self, variables: U)
     where
         U: IntoIterator<Item = (String, String)>,
     {
@@ -565,7 +473,7 @@ impl SceneManager {
         self.variables.get(variable)
     }
 
-    fn update_scene_entry(
+    pub(crate) fn update_scene_entry(
         &mut self,
         scene: SceneId,
         key: SceneSectionId,
