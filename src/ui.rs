@@ -3,15 +3,17 @@ use bevy_egui::{
     EguiContexts,
     egui::{
         self, Align2, CollapsingHeader, Color32, Frame, Label, Margin, RichText, ScrollArea,
-        SelectableLabel, Stroke, TextEdit, TextStyle, Ui, Widget, Window,
+        SelectableLabel, Stroke, TextEdit, TextStyle, Ui, Widget, Window, load::SizedTexture,
     },
 };
 
 use crate::{
     AttackEvent, Battle, DebugPlaySceneId, EndBattleEvent, EndSceneEvent, ItemManager, Npc,
-    PlaySceneEvent, Player, RpgEntity, SceneManager, ScenePlayer, ScenePlayerInput,
-    StaticCommandsEvent, UiScenePart,
+    PixelBufferImageId, PlaySceneEvent, Player, RpgEntity, SceneManager, ScenePlayer,
+    ScenePlayerInput, StaticCommandsEvent, UiScenePart,
 };
+
+const SCALE_FACTOR: f32 = 16.0;
 
 pub fn dialogue_ui(
     mut contexts: EguiContexts,
@@ -171,32 +173,32 @@ pub fn map_ui(
     mut contexts: EguiContexts,
     mut play_scene_event: EventWriter<PlaySceneEvent>,
     mut debug_new_scene_id: ResMut<DebugPlaySceneId>,
-    // mut user_textures: ResMut<EguiUserTextures>,
-    // pixels: Res<PixelBuffer>,
+    pixel_buffer_image_id: Res<PixelBufferImageId>,
 ) {
     let ctx = contexts.ctx_mut();
-
-    // let texture_id = user_textures
-    //     .image_id(&pixels.handle)
-    //     .unwrap_or_else(|| user_textures.add_image(pixels.handle.clone()));
 
     Window::new("Map Mode")
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
         .show(ctx, |ui| {
-            CollapsingHeader::new("Play Scene")
-                .default_open(true)
-                .show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        TextEdit::singleline(&mut debug_new_scene_id.0)
-                            .hint_text("scene id")
-                            .ui(ui);
-                        if ui.button("play").clicked() {
-                            play_scene_event
-                                .write(PlaySceneEvent(debug_new_scene_id.0.clone().into()));
-                        }
-                    })
-                });
-            // ui.image(SizedTexture::new(texture_id, egui::Vec2::new(28.0, 28.0)));
+            ui.horizontal(|ui| {
+                ui.image(SizedTexture::new(
+                    (&pixel_buffer_image_id).0,
+                    egui::Vec2::new(28.0 * SCALE_FACTOR, 28.0 * SCALE_FACTOR),
+                ));
+                CollapsingHeader::new("Play Scene")
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            TextEdit::singleline(&mut debug_new_scene_id.0)
+                                .hint_text("scene id")
+                                .ui(ui);
+                            if ui.button("play").clicked() {
+                                play_scene_event
+                                    .write(PlaySceneEvent(debug_new_scene_id.0.clone().into()));
+                            }
+                        })
+                    });
+            })
         });
 }
 

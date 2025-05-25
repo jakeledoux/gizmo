@@ -97,7 +97,8 @@ fn main() -> anyhow::Result<()> {
     .insert_resource(MapManager::new())
     .insert_resource(SceneManager::new())
     .add_systems(Startup, (setup, setup_pixel_buffer))
-    .add_systems(Update, exit_on_esc);
+    .add_systems(Update, exit_on_esc)
+    .add_systems(Update, draw_random_pixels.run_if(in_state(GameState::Map)));
 
     register_events(&mut app);
     register_ui(&mut app);
