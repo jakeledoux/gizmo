@@ -1,37 +1,49 @@
-use bevy::{
-    log::error,
-    prelude::{Entity, EventWriter, Query, Res, With},
-};
-use bevy_egui::egui::{
-    self, Align2, CollapsingHeader, Color32, Context, Frame, Label, Margin, RichText, ScrollArea,
-    SelectableLabel, Stroke, TextEdit, TextStyle, Ui, Widget, Window,
+use bevy::prelude::*;
+use bevy_egui::{
+    EguiContexts,
+    egui::{
+        self, Align2, CollapsingHeader, Color32, Frame, Label, Margin, RichText, ScrollArea,
+        SelectableLabel, Stroke, TextEdit, TextStyle, Ui, Widget, Window,
+    },
 };
 
 use crate::{
-    AttackEvent, Battle, EndBattleEvent, ItemManager, Npc, PlaySceneEvent, Player, RpgEntity,
-    SceneManager, ScenePlayer, ScenePlayerInput, StaticCommandsEvent, UiScenePart,
+    AttackEvent, Battle, DebugPlaySceneId, EndBattleEvent, EndSceneEvent, ItemManager, Npc,
+    PlaySceneEvent, Player, RpgEntity, SceneManager, ScenePlayer, ScenePlayerInput,
+    StaticCommandsEvent, UiScenePart,
 };
 
 pub fn dialogue_ui(
-    ctx: &mut Context,
-    scene_player: &mut ScenePlayer,
-    scene_manager: &mut SceneManager,
-    scene_commands_events: &mut EventWriter<StaticCommandsEvent>,
+    mut contexts: EguiContexts,
+    mut scene_player: ResMut<ScenePlayer>,
+    mut scene_manager: ResMut<SceneManager>,
+    mut scene_commands_event: EventWriter<StaticCommandsEvent>,
+    mut end_scene_event: EventWriter<EndSceneEvent>,
     npc_query: Query<(&Npc, &RpgEntity)>,
-) -> Option<ScenePlayerInput> {
+) {
+    let ctx = contexts.ctx_mut();
+
     let mut scene_player_input = None;
     let Some(UiScenePart { line, responses }) =
-        scene_player.get_current(scene_manager, scene_commands_events)
+        scene_player.get_current(&scene_manager, &mut scene_commands_event)
     else {
-        return Some(ScenePlayerInput::SelectCurrent);
+        scene_player.input(
+            ScenePlayerInput::SelectCurrent,
+            &mut scene_manager,
+            &mut end_scene_event,
+            &mut scene_commands_event,
+        );
+        return;
     };
 
-    let Some((_speaker_npc, speaker_rpg_entity)) = npc_query
+    let fallback_name = &line.from.0;
+    let speaker_rpg_entity = if let Some((_npc, rpg_entity)) = npc_query
         .iter()
         .find(|(npc, _rpg_entity)| npc.id == line.from)
-    else {
-        error!("failed to get speaker NPC!");
-        return None;
+    {
+        Some(rpg_entity)
+    } else {
+        None
     };
 
     Window::new("Dialogue")
@@ -53,9 +65,13 @@ pub fn dialogue_ui(
                     // left side: name and dialogue
                     ui.vertical(|ui| {
                         ui.label(
-                            RichText::new(speaker_rpg_entity.name())
-                                .text_style(TextStyle::Heading)
-                                .color(Color32::WHITE),
+                            RichText::new(
+                                speaker_rpg_entity
+                                    .map(|e| e.name())
+                                    .unwrap_or(fallback_name),
+                            )
+                            .text_style(TextStyle::Heading)
+                            .color(Color32::WHITE),
                         );
 
                         Frame::dark_canvas(ui.style()).show(ui, |ui| {
@@ -64,10 +80,12 @@ pub fn dialogue_ui(
                         })
                     });
 
-                    // right: speaker image
-                    let image_size = egui::vec2(100.0, 60.0);
-                    // TODO: get character image from character query
-                    ui.add_sized(image_size, Label::new("<image here>"));
+                    if let Some(_speaker_rpg_entity) = speaker_rpg_entity {
+                        // right: speaker image
+                        let image_size = egui::vec2(100.0, 60.0);
+                        // TODO: get character image from character query
+                        ui.add_sized(image_size, Label::new("<image here>"));
+                    }
                 });
 
                 // response row
@@ -94,7 +112,52 @@ pub fn dialogue_ui(
             })
         });
 
-    scene_player_input
+    if let Some(input) = scene_player_input {
+        scene_player.input(
+            input,
+            &mut scene_manager,
+            &mut end_scene_event,
+            &mut scene_commands_event,
+        );
+    }
+}
+
+pub fn dialogue_ui_input(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut scene_manager: ResMut<SceneManager>,
+    mut scene_player: Option<ResMut<ScenePlayer>>,
+    mut end_scene_event: EventWriter<EndSceneEvent>,
+    mut static_command_event: EventWriter<StaticCommandsEvent>,
+) {
+    let Some(ref mut scene_player) = scene_player else {
+        return;
+    };
+
+    if keyboard_input.just_pressed(KeyCode::KeyW) || keyboard_input.just_pressed(KeyCode::ArrowUp) {
+        scene_player.input(
+            ScenePlayerInput::MoveUp,
+            &mut scene_manager,
+            &mut end_scene_event,
+            &mut static_command_event,
+        )
+    }
+    if keyboard_input.just_pressed(KeyCode::KeyS) || keyboard_input.just_pressed(KeyCode::ArrowDown)
+    {
+        scene_player.input(
+            ScenePlayerInput::MoveDown,
+            &mut scene_manager,
+            &mut end_scene_event,
+            &mut static_command_event,
+        )
+    }
+    if keyboard_input.just_pressed(KeyCode::KeyE) || keyboard_input.just_pressed(KeyCode::Enter) {
+        scene_player.input(
+            ScenePlayerInput::SelectCurrent,
+            &mut scene_manager,
+            &mut end_scene_event,
+            &mut static_command_event,
+        )
+    }
 }
 
 fn response_button(ui: &mut Ui, text: &str, selected: bool) -> egui::Response {
@@ -105,10 +168,18 @@ fn response_button(ui: &mut Ui, text: &str, selected: bool) -> egui::Response {
 }
 
 pub fn map_ui(
-    ctx: &mut Context,
-    play_scene_event: &mut EventWriter<PlaySceneEvent>,
-    debug_new_scene_id: &mut String,
+    mut contexts: EguiContexts,
+    mut play_scene_event: EventWriter<PlaySceneEvent>,
+    mut debug_new_scene_id: ResMut<DebugPlaySceneId>,
+    // mut user_textures: ResMut<EguiUserTextures>,
+    // pixels: Res<PixelBuffer>,
 ) {
+    let ctx = contexts.ctx_mut();
+
+    // let texture_id = user_textures
+    //     .image_id(&pixels.handle)
+    //     .unwrap_or_else(|| user_textures.add_image(pixels.handle.clone()));
+
     Window::new("Map Mode")
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
         .show(ctx, |ui| {
@@ -116,26 +187,29 @@ pub fn map_ui(
                 .default_open(true)
                 .show(ui, |ui| {
                     ui.horizontal(|ui| {
-                        TextEdit::singleline(debug_new_scene_id)
+                        TextEdit::singleline(&mut debug_new_scene_id.0)
                             .hint_text("scene id")
                             .ui(ui);
                         if ui.button("play").clicked() {
                             play_scene_event
-                                .write(PlaySceneEvent(debug_new_scene_id.to_owned().into()));
+                                .write(PlaySceneEvent(debug_new_scene_id.0.clone().into()));
                         }
                     })
-                })
+                });
+            // ui.image(SizedTexture::new(texture_id, egui::Vec2::new(28.0, 28.0)));
         });
 }
 
 pub fn battle_ui(
-    ctx: &mut Context,
-    player_query: &Query<Entity, With<Player>>,
-    npc_query: &Query<(&Npc, &RpgEntity)>,
-    battle: &Res<Battle>,
-    attack_event: &mut EventWriter<AttackEvent>,
-    end_battle_event: &mut EventWriter<EndBattleEvent>,
+    mut contexts: EguiContexts,
+    player_query: Query<Entity, With<Player>>,
+    npc_query: Query<(&Npc, &RpgEntity)>,
+    battle: Res<Battle>,
+    mut attack_event: EventWriter<AttackEvent>,
+    mut end_battle_event: EventWriter<EndBattleEvent>,
 ) {
+    let ctx = contexts.ctx_mut();
+
     let opponent_entity = battle.0;
     let Ok((_opponent_npc, opponent_rpg_entity)) = npc_query.get(opponent_entity) else {
         error!("failed to get opponent");
@@ -180,12 +254,13 @@ pub fn battle_ui(
 }
 
 pub fn debug_ui(
-    ctx: &mut Context,
+    mut contexts: EguiContexts,
     player_query: Query<&RpgEntity, With<Player>>,
     entity_query: Query<(&Npc, &RpgEntity)>,
-    scene_manager: &SceneManager,
-    item_manager: &ItemManager,
+    scene_manager: Res<SceneManager>,
+    item_manager: Res<ItemManager>,
 ) {
+    let ctx = contexts.ctx_mut();
     let player = player_query.single().expect("player must exist.");
 
     Window::new("Debug Panel").show(ctx, |ui| {

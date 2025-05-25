@@ -5,6 +5,7 @@ mod components;
 mod events;
 mod items;
 mod maps;
+mod pixels;
 mod scenes;
 mod static_commands;
 mod systems;
@@ -15,12 +16,14 @@ mod utils;
 use std::path::Path;
 
 use bevy::prelude::*;
-use bevy_egui::{EguiContextPass, EguiContexts, EguiPlugin};
+use bevy_egui::{EguiContextPass, EguiPlugin};
+use bevy_rand::prelude::*;
 
 pub use components::*;
 pub use events::*;
 pub use items::*;
 pub use maps::*;
+pub use pixels::*;
 pub use scenes::*;
 pub use static_commands::*;
 pub use systems::*;
@@ -68,7 +71,6 @@ impl StateManager {
     }
 }
 
-// TODO: state should be a stack
 #[derive(States, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GameState {
     Map,
@@ -76,11 +78,7 @@ pub enum GameState {
     Battle,
 }
 
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct MapSet;
-
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct DialogueSet;
+pub type Rng<'w> = GlobalEntropy<'w, WyRand>;
 
 fn main() -> anyhow::Result<()> {
     let state_manager = StateManager::new(GameState::Map);
@@ -91,24 +89,18 @@ fn main() -> anyhow::Result<()> {
         EguiPlugin {
             enable_multipass_for_primary_context: true,
         },
+        EntropyPlugin::<WyRand>::default(),
     ))
     .insert_state(state_manager.get().expect("state exists."))
     .insert_resource(state_manager)
     .insert_resource(ItemManager::new())
     .insert_resource(MapManager::new())
     .insert_resource(SceneManager::new())
-    .configure_sets(
-        Update,
-        (
-            MapSet.run_if(in_state(GameState::Map)),
-            DialogueSet.run_if(in_state(GameState::Dialogue)),
-        ),
-    )
-    .add_systems(Startup, setup)
-    .add_systems(EguiContextPass, ui_system)
+    .add_systems(Startup, (setup, setup_pixel_buffer))
     .add_systems(Update, exit_on_esc);
 
     register_events(&mut app);
+    register_ui(&mut app);
 
     app.run();
 
@@ -127,7 +119,7 @@ fn register_events(app: &mut App) {
         .add_event::<SpawnNpcEvent>()
         .add_event::<UpdateNpcEvent>()
         .add_systems(
-            Update,
+            PostUpdate,
             (
                 // RPG events
                 AttackEvent::handler,
@@ -135,8 +127,8 @@ fn register_events(app: &mut App) {
                 DeathEvent::handler,
                 // scene events
                 PlaySceneEvent::handler,
+                StaticCommandsEvent::handler,
                 EndSceneEvent::handler,
-                StaticCommandsEvent::handler.before(EndSceneEvent::handler),
                 // battle events
                 StartBattleEvent::handler,
                 EndBattleEvent::handler,
@@ -147,6 +139,19 @@ fn register_events(app: &mut App) {
         );
 }
 
+fn register_ui(app: &mut App) {
+    app.add_systems(EguiContextPass, debug_ui.run_if(|| DEBUG))
+        .add_systems(EguiContextPass, map_ui.run_if(in_state(GameState::Map)))
+        .add_systems(
+            EguiContextPass,
+            (dialogue_ui, dialogue_ui_input).run_if(in_state(GameState::Dialogue)),
+        )
+        .add_systems(
+            EguiContextPass,
+            battle_ui.run_if(in_state(GameState::Battle)),
+        );
+}
+
 fn setup(
     mut commands: Commands,
     // server: ResMut<AssetServer>,
@@ -154,6 +159,7 @@ fn setup(
     mut map_manager: ResMut<MapManager>,
     mut scene_manager: ResMut<SceneManager>,
     mut state_manager: ResMut<StateManager>,
+    npc_query: Query<&Npc>,
 ) {
     commands.spawn(Camera2d);
     // value for text input for selecting scenes
@@ -175,116 +181,21 @@ fn setup(
 
     // spawn player
     utils::spawn_player(&mut commands, &item_manager, "Jake", &["dragonbone-sword"]);
+
+    utils::spawn_npc(
+        &mut commands,
+        npc_query,
+        NpcId(String::from("narrator")),
+        Character {
+            name: String::from(""),
+            ..default()
+        },
+    );
 }
 
 #[derive(Resource, Default)]
-struct DebugPlaySceneId(String);
+pub struct DebugPlaySceneId(String);
 
 fn debug_quit_immediately(mut exit_event: EventWriter<AppExit>) {
     exit_event.write(AppExit::Success);
-}
-
-#[allow(clippy::too_many_arguments)]
-fn ui_system(
-    mut contexts: EguiContexts,
-    game_state: Res<State<GameState>>,
-    mut scene_manager: ResMut<SceneManager>,
-    item_manager: Res<ItemManager>,
-    mut scene_player: Option<ResMut<ScenePlayer>>,
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut play_scene_event: EventWriter<PlaySceneEvent>,
-    mut end_scene_event: EventWriter<EndSceneEvent>,
-    mut static_command_event: EventWriter<StaticCommandsEvent>,
-    mut attack_event: EventWriter<AttackEvent>,
-    mut end_battle_event: EventWriter<EndBattleEvent>,
-    mut debug_new_scene_id: ResMut<DebugPlaySceneId>,
-    debug_player_query: Query<&RpgEntity, With<Player>>,
-    npc_query: Query<(&Npc, &RpgEntity)>,
-    battle_player_query: Query<Entity, With<Player>>,
-    battle: Option<Res<Battle>>,
-) {
-    let play_scene_event = &mut play_scene_event;
-    let end_scene_event = &mut end_scene_event;
-    let static_command_event = &mut static_command_event;
-
-    if DEBUG {
-        debug_ui(
-            contexts.ctx_mut(),
-            debug_player_query,
-            npc_query,
-            &scene_manager,
-            &item_manager,
-        );
-    }
-
-    match **game_state {
-        GameState::Map => {
-            map_ui(
-                contexts.ctx_mut(),
-                play_scene_event,
-                &mut debug_new_scene_id.0,
-            );
-        }
-        GameState::Dialogue => {
-            let Some(ref mut scene_player) = scene_player else {
-                return;
-            };
-
-            if let Some(input) = dialogue_ui(
-                contexts.ctx_mut(),
-                scene_player,
-                &mut scene_manager,
-                static_command_event,
-                npc_query,
-            ) {
-                scene_player.input(
-                    input,
-                    &mut scene_manager,
-                    end_scene_event,
-                    static_command_event,
-                )
-            }
-
-            if keyboard_input.just_pressed(KeyCode::KeyW)
-                || keyboard_input.just_pressed(KeyCode::ArrowUp)
-            {
-                scene_player.input(
-                    ScenePlayerInput::MoveUp,
-                    &mut scene_manager,
-                    end_scene_event,
-                    static_command_event,
-                )
-            }
-            if keyboard_input.just_pressed(KeyCode::KeyS)
-                || keyboard_input.just_pressed(KeyCode::ArrowDown)
-            {
-                scene_player.input(
-                    ScenePlayerInput::MoveDown,
-                    &mut scene_manager,
-                    end_scene_event,
-                    static_command_event,
-                )
-            }
-            if keyboard_input.just_pressed(KeyCode::KeyE)
-                || keyboard_input.just_pressed(KeyCode::Enter)
-            {
-                scene_player.input(
-                    ScenePlayerInput::SelectCurrent,
-                    &mut scene_manager,
-                    end_scene_event,
-                    static_command_event,
-                )
-            }
-        }
-        GameState::Battle => {
-            battle_ui(
-                contexts.ctx_mut(),
-                &battle_player_query,
-                &npc_query,
-                &battle.expect("gamestate is battle but there's no battle!"),
-                &mut attack_event,
-                &mut end_battle_event,
-            );
-        }
-    }
 }

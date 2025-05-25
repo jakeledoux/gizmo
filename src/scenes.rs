@@ -3,7 +3,7 @@ use std::{collections::HashSet, ops::Add, path::Path};
 use bevy::{
     log::{error, info},
     platform::collections::HashMap,
-    prelude::{EventWriter, Resource},
+    prelude::{Commands, EventWriter, Resource},
 };
 use serde::Deserialize;
 
@@ -210,6 +210,10 @@ impl ScenePlayer {
         }
     }
 
+    pub fn cleanup(mut commands: Commands) {
+        commands.remove_resource::<Self>();
+    }
+
     fn get_scene<'a>(&self, scene_manager: &'a SceneManager) -> &'a Scene {
         scene_manager.scenes.get(&self.scene).unwrap_or_else(|| {
             panic!("no scene with ID: {:?}", self.scene);
@@ -231,7 +235,9 @@ impl ScenePlayer {
 
         if let Some(commands) = dialogue.commands.clone() {
             let bookmark = SceneBookmark::new(&self.scene, Some(&self.current_key), None, None);
-            scene_commands_events.write(StaticCommandsEvent(bookmark, commands));
+            if !self.executed_commands.contains(&bookmark) {
+                scene_commands_events.write(StaticCommandsEvent(bookmark, commands));
+            }
         }
 
         dialogue
@@ -259,6 +265,7 @@ impl ScenePlayer {
         scene_commands_events: &mut EventWriter<StaticCommandsEvent>,
     ) {
         if dialogue.lines.is_empty() {
+            info!("ending scene!"); // TODO: delete
             end_scene_event.write(EndSceneEvent);
             return;
         }
@@ -276,15 +283,19 @@ impl ScenePlayer {
                 Some(self.current_line),
                 None,
             );
-            scene_commands_events.write(StaticCommandsEvent(bookmark, commands));
+            if !self.executed_commands.contains(&bookmark) {
+                scene_commands_events.write(StaticCommandsEvent(bookmark, commands));
+            }
         }
 
         // continue dialog
         if dialogue.lines.len() - 1 > self.current_line {
+            info!("continue dialog"); // TODO: delete
             self.advance_line();
         }
         // execute response
         else if let Some(response) = dialogue.responses.get(self.highlighted_response) {
+            info!("execute response"); // TODO: delete
             if let Some(commands) = response.commands.clone() {
                 let bookmark = SceneBookmark::new(
                     &self.scene,
@@ -292,21 +303,27 @@ impl ScenePlayer {
                     None,
                     Some(self.highlighted_response),
                 );
-                scene_commands_events.write(StaticCommandsEvent(bookmark, commands));
+                if !self.executed_commands.contains(&bookmark) {
+                    scene_commands_events.write(StaticCommandsEvent(bookmark, commands));
+                }
             }
 
             // TODO: skill check, etc.
             if let Some(link) = response.link.as_ref() {
+                info!("going to link"); // TODO: delete
                 self.set_key(link.to_owned());
             } else {
+                info!("ending scene!"); // TODO: delete
                 end_scene_event.write(EndSceneEvent);
             }
         // continue to next section
         } else if let Some(ref section) = dialogue.continue_to {
+            info!("continuing to next section"); // TODO: delete
             self.set_key(section.to_owned())
         }
         // end scene
         else {
+            info!("ending scene!"); // TODO: delete
             end_scene_event.write(EndSceneEvent);
         }
     }

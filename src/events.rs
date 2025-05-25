@@ -116,15 +116,15 @@ impl EndSceneEvent {
         mut state_manager: ResMut<StateManager>,
     ) {
         let end_scene_events = end_scene_events.read();
-        if end_scene_events.len() > 1 {
-            warn!("more than one end scene event is queued")
-        }
-        if end_scene_events.count() > 0 {
-            commands.remove_resource::<ScenePlayer>();
+        if end_scene_events.len() > 0 {
+            if end_scene_events.len() > 1 {
+                warn!("more than one end scene event is queued")
+            }
             assert!(matches!(
                 state_manager.pop(&mut commands),
                 Some(GameState::Dialogue)
             ));
+            commands.remove_resource::<ScenePlayer>();
         }
     }
 }
@@ -145,7 +145,7 @@ impl StaticCommandsEvent {
             //
             // there could potentially be an issue here if the scene is exited
             // before the final commands are executed. if that happens then this
-            // handler should be set to run before the sceen exit handler.
+            // handler should be set to run before the screen exit handler.
             assert_eq!(static_commands_events.len(), 0);
             return;
         };
